@@ -5,7 +5,7 @@ import numpy as np
 def esCuadrada(A):
 
     for r in A:
-        if r.size != A.size:
+        if r.size != len(A):
             return False
 
     return True
@@ -14,9 +14,9 @@ def esCuadrada(A):
 # correspondiente a la matriz Triangular Superior de A sin su diagonal.
 def triangSup(A):
 
-    for i in range(A.size):
-        for j in range(i.size):
-            if i <= j:
+    for i in range(len(A)):
+        for j in range(A[i].size):
+            if i >= j:
                 A[i][j] = 0
 
     return A
@@ -25,9 +25,9 @@ def triangSup(A):
 # correspondiente a la matriz Triangular Inferior de A sin su diagonal.
 def triangInf(A):
 
-    for i in range(A.size):
-        for j in range(i.size):
-            if i >= j:
+    for i in range(len(A)):
+        for j in range(A[i].size):
+            if i <= j:
                 A[i][j] = 0
 
     return A
@@ -36,8 +36,8 @@ def triangInf(A):
 # correspondiente a la matriz diagonal de A.
 def diagonal(A):
 
-    for i in range(A.size):
-            for j in range(i.size):
+    for i in range(len(A)):
+            for j in range(A[i].size):
                 if i != j:
                     A[i][j] = 0
 
@@ -48,10 +48,10 @@ def diagonal(A):
 def traza(A):
 
     acc = 0
-    for i in range(A.size):
-        for j in range(i.size):
-            if i == j:
-                acc += A[i][j]
+    for i in range(len(A)):
+            for j in range(A[i].size):
+                if i == j:
+                    acc += A[i][j]
 
     return acc
 
@@ -59,11 +59,11 @@ def traza(A):
 # traspuesta de A.
 def traspuesta(A):
 
-    n = A.size
+    n = len(A)
     m = A[0].size
-    B = np.array(m,n)
-    for i in range(A.size):
-        for j in range(i.size):
+    B = np.zeros((m,n))
+    for i in range(len(A)):
+        for j in range(A[i].size):
             B[j][i] = A[i][j]
 
     return B
@@ -75,20 +75,24 @@ def simetrica(A):
     if not(esCuadrada(A)):
        return False
 
-    for i in range(A.size):
-        for j in range(i.size):
+    for i in range(len(A)):
+        for j in range(A[i].size):
             if A[i][j] != A[j][i]:
                 return False
+    return True
 
 # Ejercicio 8. Desarrollar una funcion calcularAx(A,x) que recibe una matriz
 # A de tamano n x m y un vector x de largo m y devuelve un vector b de largo n
 # resultado de la multiplicacion vectorial de la matriz y el vector.
 def calcularAx(A, x):
 
-    b = np.array(x.size)
-    for i in range(A.size):
+    if len(A[0]) != len(x): 
+        return None;
+
+    b = np.zeros(len(A))
+    for i in range(len(A)):
         sum = 0
-        for j in range(i.size):
+        for j in range(A[i].size):
             sum += A[i][j] * x[j]
         b[i] = sum
 
