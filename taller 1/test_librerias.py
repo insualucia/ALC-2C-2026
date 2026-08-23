@@ -239,6 +239,7 @@ def test_ej11_esDiagonalmenteDominante_false():
 # ---------------------------------------------------------------------
 
 def test_ej12_matrizCirculante():
+
     v = np.array([1, 2, 3])
     esperado = np.array([[1, 2, 3],
                          [3, 1, 2],

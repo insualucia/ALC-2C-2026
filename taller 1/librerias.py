@@ -102,16 +102,23 @@ def calcularAx(A, x):
 # intercambie las filas i y la j de la matriz A. El intercambio tiene que
 # ser in-place.
 def intercambiarFilas(A, i, j):
-    # TODO: resolver
-    pass
+
+    for k in range(len(A[i])):
+        aux = A[i][k]
+        A[i][k] = A[j][k]
+        A[j][k] = aux
+
 
 # Ejercicio 10. Desarrollar una funcion sumar_fila_multiplo(A, i, j, s) que
 # a la fila i le sume la fila j multiplicada por un escalar s. Esta es una
 # operacion elemental clave en la eliminacion gaussiana. La operacion debe
 # ser in-place.
 def sumar_fila_multiplo(A, i, j, s):
-    # TODO: resolver
-    pass
+    
+    fi = A[i]
+    fj = A[j]
+    for k in range(len(fi)):
+        fi[k] += fj[k]*s
 
 # Ejercicio 11. Desarrollar una funcion esDiagonalmenteDominante(A) que
 # devuelva True si una matriz cuadrada A es estrictamente diagonalmente
@@ -119,8 +126,18 @@ def sumar_fila_multiplo(A, i, j, s):
 # en la diagonal es mayor que la suma de los valores absolutos de los demas
 # elementos en esa fila.
 def esDiagonalmenteDominante(A):
-    # TODO: resolver
-    pass
+
+    for i in range(len(A)):
+        d = abs(A[i][i])
+        sum = 0
+        for j in range(len(A[i])):
+            if i != j:
+                sum += abs(A[i][j])
+        if d <= sum:
+            return False
+
+    return True
+
 
 # Ejercicio 12. Desarrollar una funcion matrizCirculante(v) que genere una
 # matriz circulante a partir de un vector. En una matriz circulante la
@@ -128,15 +145,28 @@ def esDiagonalmenteDominante(A):
 # permutacion ciclica de la fila anterior, moviendo los elementos un lugar
 # hacia la derecha.
 def matrizCirculante(v):
-    # TODO: resolver
-    pass
+
+    m = np.zeros((len(v),len(v)))
+
+    for i in range(len(m)):
+        for j in range(len(m[i])):
+            pos_a_leer_de_v = (j - i) % len(v)
+            m[i][j] = v[pos_a_leer_de_v]
+
+    return m
 
 # Ejercicio 13. Desarrollar una funcion matrizVandermonde(v), donde v es un
 # vector de R^n y se devuelve la matriz de Vandermonde V en R^(n x n) cuya
 # fila i-esima corresponde con la potencia (i-1)-esima de los elementos de v.
 def matrizVandermonde(v):
-    # TODO: resolver
-    pass
+
+    m = np.zeros((len(v), len(v)))
+
+    for i in range(len(m)):
+        for j in range(len(m[i])):
+            m[i][j] = v[j] ** i
+
+    return m
 
 # Ejercicio 14. Desarrollar una funcion numeroAureo(n) que estime el numero
 # aureo phi como F(k+1)/F(k), siendo F(k) el k-esimo numero de la sucesion
@@ -145,22 +175,50 @@ def matrizVandermonde(v):
 # de forma matricial, usando la semilla F0 = 0, F1 = 1. Grafique el valor
 # aproximado de phi en funcion del numero de pasos de la sucesion
 # considerado.
+def vector_fibonacci(k):
+    v = np.array([1, 0])
+    M = np.array([
+        [1, 1],
+        [1, 0]
+    ])
+
+    for i in range(k):
+        v = calcularAx(M, v)
+
+    return v
+
+def fibonacci(k):
+    v = vector_fibonacci(k)
+    return v[1]
+
 def numeroAureo(n):
-    # TODO: resolver
-    pass
+    v = vector_fibonacci(n)
+    return v[0]/v[1]
 
 # Ejercicio 15. Desarrollar una funcion matrizFiboncacci(n), que genera una
 # matriz A de n x n, y cada a_ij = F(i+j), siendo F(k) el k-esimo numero de
 # la sucesion de Fibonacci (considerando F0 = 0, F1 = 1).
 def matrizFiboncacci(n):
-    # TODO: resolver
-    pass
+
+    A = np.zeros((n,n))
+
+    for i in range(n):
+        for j in range(n):
+            A[i][j] = fibonacci(i+j)
+
+    return A
 
 # Ejercicio 16. Desarrollar una funcion matrizHilbert(n), que genera una
 # matriz de Hilbert H de n x n, y cada h_ij = 1 / (i+j+1).
 def matrizHilbert(n):
-    # TODO: resolver
-    pass
+
+    A = np.zeros((n,n))
+
+    for i in range(n):
+        for j in range(n):
+            A[i][j] = 1/(i+j+1)
+
+    return A
 
 # Ejercicio 17. Usando las funciones previamente desarrolladas donde sea
 # posible, escriba una rutina que calcule los valores entre -1 y 1 de los
