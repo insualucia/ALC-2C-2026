@@ -1,0 +1,131 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+#def multiplicacionDeMatrices(A,B):
+    #assert(A.shape[0] == B.shape[1])
+    #C = np.zeros([A.shape[1],B.shape[0]])
+    #for i in range(C)
+
+def pointsGrid(esquinas):
+    # crear 10 lineas horizontales
+    [w1, z1] = np.meshgrid(np.linspace(esquinas[0,0], esquinas[1,0], 46),
+                        np.linspace(esquinas[0,1], esquinas[1,1], 10))
+
+    [w2, z2] = np.meshgrid(np.linspace(esquinas[0,0], esquinas[1,0], 10),
+                        np.linspace(esquinas[0,1], esquinas[1,1], 46))
+
+    w = np.concatenate((w1.reshape(1,-1),w2.reshape(1,-1)),1)
+    z = np.concatenate((z1.reshape(1,-1),z2.reshape(1,-1)),1)
+    wz = np.concatenate((w,z))
+
+    return wz
+
+def proyectarPts(wz, angulo):
+    T = np.array([[np.cos(angulo), -1 * np.sin(angulo)],[np.sin(angulo), np.cos(angulo)]])
+    assert(T.shape == (2,2)) # chequeo de matriz 2x2
+    assert(T.shape[1] == wz.shape[0]) # multiplicacion matricial valida
+    xy = None
+    ############### Insert code here!! ######################3
+    xy = T @ wz
+
+    ############### Insert code here!! ######################3
+    return xy
+
+def rota(angulo):
+  T = np.array([
+    [np.cos(angulo), -1 * np.sin(angulo)],
+    [np.sin(angulo), np.cos(angulo)]])
+  return T
+
+def escala(s):
+    A = np.zeros([len(s), len(s)])
+    for i in range(len(s)):
+      A[i][i] = s[i]
+    return A
+
+def rotayescala(angulo, s):
+  R = rota(angulo)
+  E = escala(s)
+  assert(R.shape[1] == E.shape[0])
+  A = R @ E ##cambiar por producto matricial propio
+  return A
+
+def afin(theta,s,b):
+  RyE = rotayescala(theta, s)
+  A = np.zeros([3,3])
+  for i in range(len(RyE)):
+    for j in range(len(RyE[i])):
+      A[i][j] = RyE[i][j]
+  A[0][2] = b[0]
+  A[1][2] = b[1]
+  A[2][2] = 1
+  return A
+
+def transafin(v, theta, s, b):
+  F = afin(theta, s, b)
+  v = np.array([v[0], v[1], 1])
+
+
+# Tests para rota
+assert np.allclose(rota(0), np.eye(2))
+assert np.allclose(rota(np.pi / 2), np.array([[0, -1], [1, 0]]))
+assert np.allclose(rota(np.pi), np.array([[-1, 0], [0, -1]]))
+
+# Tests para escala
+assert np.allclose(escala([2, 3]), np.array([[2, 0], [0, 3]]))
+assert np.allclose(escala([1, 1, 1]), np.eye(3))
+assert np.allclose(escala([0.5, 0.25]), np.array([[0.5, 0], [0, 0.25]]))
+
+# Tests para rota y escala
+assert np.allclose(rotayescala(0, [2, 3]), np.array([[2, 0], [0, 3]]))
+assert np.allclose(
+    rotayescala(np.pi / 2, [1, 1]), np.array([[0, -1], [1, 0]])
+)
+assert np.allclose(
+    rotayescala(np.pi, [2, 2]), np.array([[-2, 0], [0, -2]])
+)
+
+# Tests para afin
+assert np.allclose(
+    afin(0, [1, 1], [1, 2]),
+    np.array([
+        [1, 0, 1],
+        [0, 1, 2],
+        [0, 0, 1]
+    ])
+)
+
+assert np.allclose(
+    afin(np.pi / 2, [1, 1], [0, 0]),
+    np.array([
+        [0, -1, 0],
+        [1,  0, 0],
+        [0,  0, 1]
+    ])
+)
+
+assert np.allclose(
+    afin(0, [2, 3], [1, 1]),
+    np.array([
+        [2, 0, 1],
+        [0, 3, 1],
+        [0, 0, 1]
+    ])
+)
+
+# Tests para transafin
+#assert np.allclose(
+  #  transafin(np.array([1, 0]), np.pi / 2, [1, 1], [0, 0]),
+ #   np.array([0, 1])
+#)
+
+#assert np.allclose(
+  #  transafin(np.array([1, 1]), 0, [2, 3], [0, 0]),
+ #   np.array([2, 3])
+#)
+
+#assert np.allclose(
+ #   transafin(np.array([1, 0]), np.pi / 2, [3, 2], [4, 5]),
+  #  np.array([4, 7])
+#)
