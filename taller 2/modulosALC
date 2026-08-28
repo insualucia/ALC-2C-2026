@@ -2,10 +2,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-#def multiplicacionDeMatrices(A,B):
-    #assert(A.shape[0] == B.shape[1])
-    #C = np.zeros([A.shape[1],B.shape[0]])
-    #for i in range(C)
+def multiplicacionDeVectores(v1, v2):
+  res = 0
+  for i in range(v1.size):
+    res = res + v1[i]*v2[i]
+  return res
+
+def multiplicacionDeMatrices(A,B):
+    assert(A.shape[0] == B.shape[1])
+    C = np.zeros([A.shape[1],B.shape[0]])
+    for i in range(C.shape[0]):
+      for j in range(C.shape[1]):
+        C[i][j] = multiplicacionDeVectores(A[i],B[:,j])
+    return C
 
 def pointsGrid(esquinas):
     # crear 10 lineas horizontales
@@ -27,7 +36,7 @@ def proyectarPts(wz, angulo):
     assert(T.shape[1] == wz.shape[0]) # multiplicacion matricial valida
     xy = None
     ############### Insert code here!! ######################3
-    xy = T @ wz
+    xy = multiplicacionDeMatrices(T, wz)
 
     ############### Insert code here!! ######################3
     return xy
@@ -48,7 +57,7 @@ def rotayescala(angulo, s):
   R = rota(angulo)
   E = escala(s)
   assert(R.shape[1] == E.shape[0])
-  A = R @ E ##cambiar por producto matricial propio
+  A = multiplicacionDeMatrices(R, E)
   return A
 
 def afin(theta,s,b):
