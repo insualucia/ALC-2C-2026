@@ -54,10 +54,10 @@ def escala(s):
     return A
 
 def rotayescala(angulo, s):
-  R = rota(angulo)
   E = escala(s)
+  R = rota(angulo)
   assert(R.shape[1] == E.shape[0])
-  A = multiplicacionDeMatrices(R, E)
+  A = multiplicacionDeMatrices(E, R)
   return A
 
 def afin(theta,s,b):
@@ -71,9 +71,21 @@ def afin(theta,s,b):
   A[2][2] = 1
   return A
 
+def calcularAx(A,x):
+  n = x.shape[0]
+  res = np.zeros(n)
+
+  for i in range(n):
+    for j in range(n):
+      res[i] +=  A[i][j] * x[j]
+  return res
+
 def transafin(v, theta, s, b):
   F = afin(theta, s, b)
-  v = np.array([v[0], v[1], 1])
+  w = calcularAx(F, v)
+  w[0] += F[0][2]
+  w[1] += F[1][2]
+  return w
 
 
 # Tests para rota
@@ -124,17 +136,17 @@ assert np.allclose(
 )
 
 # Tests para transafin
-#assert np.allclose(
-  #  transafin(np.array([1, 0]), np.pi / 2, [1, 1], [0, 0]),
- #   np.array([0, 1])
-#)
+assert np.allclose(
+    transafin(np.array([1, 0]), np.pi / 2, [1, 1], [0, 0]),
+    np.array([0, 1])
+)
 
-#assert np.allclose(
-  #  transafin(np.array([1, 1]), 0, [2, 3], [0, 0]),
- #   np.array([2, 3])
-#)
+assert np.allclose(
+    transafin(np.array([1, 1]), 0, [2, 3], [0, 0]),
+    np.array([2, 3])
+)
 
-#assert np.allclose(
- #   transafin(np.array([1, 0]), np.pi / 2, [3, 2], [4, 5]),
-  #  np.array([4, 7])
-#)
+assert np.allclose(
+    transafin(np.array([1, 0]), np.pi / 2, [3, 2], [4, 5]),
+    np.array([4, 7])
+)
