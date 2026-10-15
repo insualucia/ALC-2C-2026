@@ -1,0 +1,338 @@
+import numpy as np
+import pytest
+
+from labo0 import (
+    es_cuadrada,
+    triang_sup,
+    triang_inf,
+    diagonal,
+    traza,
+    traspuesta,
+    simetrica,
+    calcular_ax,
+    intercambiar_filas,
+    sumar_fila_multiplo,
+    es_diagonalmente_dominante,
+    matriz_circulante,
+    matriz_vandermonde,
+    numero_aureo,
+    matriz_fiboncacci,
+    matriz_hilbert,
+    polinomios,
+    row_echelon,
+)
+
+
+def fibonacci(k):
+    """Sucesion de Fibonacci auxiliar para los tests (F0=0, F1=1)."""
+    a, b = 0, 1
+    for _ in range(k):
+        a, b = b, a + b
+    return a
+
+
+# ---------------------------------------------------------------------
+# Ejercicio 1: es_cuadrada(A) -> True si A es cuadrada, False si no.
+# ---------------------------------------------------------------------
+
+def test_ej01_es_cuadrada_matriz_cuadrada():
+    A = np.array([[1, 2], [3, 4]])
+    assert es_cuadrada(A) is True
+
+
+def test_ej01_es_cuadrada_matriz_no_cuadrada():
+    A = np.array([[1, 2, 3], [4, 5, 6]])
+    assert es_cuadrada(A) is False
+
+
+# ---------------------------------------------------------------------
+# Ejercicio 2: triang_sup(A) -> matriz U triangular superior de A, sin
+# su diagonal.
+# ---------------------------------------------------------------------
+
+def test_ej02_triang_sup():
+    A = np.array([[1, 2, 3],
+                  [4, 5, 6],
+                  [7, 8, 9]])
+    esperado = np.array([[0, 2, 3],
+                         [0, 0, 6],
+                         [0, 0, 0]])
+    np.testing.assert_array_equal(triang_sup(A.copy()), esperado)
+
+
+# ---------------------------------------------------------------------
+# Ejercicio 3: triang_inf(A) -> matriz L triangular inferior de A, sin
+# su diagonal.
+# ---------------------------------------------------------------------
+
+def test_ej03_triang_inf():
+    A = np.array([[1, 2, 3],
+                  [4, 5, 6],
+                  [7, 8, 9]])
+    esperado = np.array([[0, 0, 0],
+                         [4, 0, 0],
+                         [7, 8, 0]])
+    np.testing.assert_array_equal(triang_inf(A.copy()), esperado)
+
+
+# ---------------------------------------------------------------------
+# Ejercicio 4: diagonal(A) -> matriz D diagonal de A.
+# ---------------------------------------------------------------------
+
+def test_ej04_diagonal():
+    A = np.array([[1, 2, 3],
+                  [4, 5, 6],
+                  [7, 8, 9]])
+    esperado = np.array([[1, 0, 0],
+                         [0, 5, 0],
+                         [0, 0, 9]])
+    np.testing.assert_array_equal(diagonal(A.copy()), esperado)
+
+
+# ---------------------------------------------------------------------
+# Ejercicio 5: traza(A) -> suma de los elementos de la diagonal de A.
+# ---------------------------------------------------------------------
+
+def test_ej05_traza():
+    A = np.array([[1, 2, 3],
+                  [4, 5, 6],
+                  [7, 8, 9]])
+    assert traza(A.copy()) == 15
+
+
+# ---------------------------------------------------------------------
+# Ejercicio 6: traspuesta(A) -> matriz traspuesta de A (incluye caso
+# no cuadrado, n x m -> m x n).
+# ---------------------------------------------------------------------
+
+def test_ej06_traspuesta_cuadrada():
+    A = np.array([[1, 2], [3, 4]])
+    esperado = np.array([[1, 3], [2, 4]])
+    np.testing.assert_array_equal(traspuesta(A.copy()), esperado)
+
+
+def test_ej06_traspuesta_no_cuadrada():
+    A = np.array([[1, 2, 3], [4, 5, 6]])  # 2x3
+    esperado = np.array([[1, 4], [2, 5], [3, 6]])  # 3x2
+    np.testing.assert_array_equal(traspuesta(A.copy()), esperado)
+
+
+# ---------------------------------------------------------------------
+# Ejercicio 7: esSimetrica(A) -> True si A es simetrica, False si no.
+# (en librerias.py la funcion se llama "simetrica")
+# ---------------------------------------------------------------------
+
+def test_ej07_simetrica_matriz_simetrica():
+    A = np.array([[1, 2, 3],
+                  [2, 5, 6],
+                  [3, 6, 9]])
+    assert simetrica(A.copy()) is True
+
+
+def test_ej07_simetrica_matriz_no_simetrica():
+    A = np.array([[1, 2], [3, 4]])
+    assert simetrica(A.copy()) is False
+
+
+def test_ej07_simetrica_matriz_no_cuadrada():
+    A = np.array([[1, 2, 3], [4, 5, 6]])
+    assert simetrica(A.copy()) is False
+
+
+# ---------------------------------------------------------------------
+# Ejercicio 8: calcular_ax(A, x) -> A (n x m) . x (largo m) = b (largo n)
+# ---------------------------------------------------------------------
+
+def test_ej08_calcular_ax_cuadrada():
+    A = np.array([[1, 2], [3, 4]])
+    x = np.array([1, 1])
+    esperado = np.array([3, 7])
+    np.testing.assert_array_equal(calcular_ax(A.copy(), x.copy()), esperado)
+
+
+def test_ej08_calcular_ax_no_cuadrada():
+    A = np.array([[1, 2, 3], [4, 5, 6]])  # 2x3
+    x = np.array([1, 0, 1])  # largo 3
+    esperado = np.array([4, 10])  # largo 2
+    np.testing.assert_array_equal(calcular_ax(A.copy(), x.copy()), esperado)
+
+
+# ---------------------------------------------------------------------
+# Ejercicio 9: intercambiar_filas(A, i, j) -> intercambia in-place las
+# filas i y j de A.
+# ---------------------------------------------------------------------
+
+def test_ej09_intercambiar_filas():
+    A = np.array([[1, 2], [3, 4], [5, 6]])
+    intercambiar_filas(A, 0, 2)
+    esperado = np.array([[5, 6], [3, 4], [1, 2]])
+    np.testing.assert_array_equal(A, esperado)
+
+
+def test_ej09_intercambiar_filas_es_inplace():
+    A = np.array([[1, 2], [3, 4]])
+    id_original = id(A)
+    intercambiar_filas(A, 0, 1)
+    assert id(A) == id_original
+
+
+# ---------------------------------------------------------------------
+# Ejercicio 10: sumar_fila_multiplo(A, i, j, s) -> in-place, fila i +=
+# s * fila j.
+# ---------------------------------------------------------------------
+
+def test_ej10_sumar_fila_multiplo():
+    A = np.array([[1, 2], [3, 4]])
+    sumar_fila_multiplo(A, 0, 1, 2)
+    # fila0 = fila0 + 2*fila1 = [1,2] + 2*[3,4] = [7,10]
+    esperado = np.array([[7, 10], [3, 4]])
+    np.testing.assert_array_equal(A, esperado)
+
+
+def test_ej10_sumar_fila_multiplo_es_inplace():
+    A = np.array([[1, 2], [3, 4]])
+    id_original = id(A)
+    sumar_fila_multiplo(A, 0, 1, -1)
+    assert id(A) == id_original
+
+
+# ---------------------------------------------------------------------
+# Ejercicio 11: es_diagonalmente_dominante(A) -> True si A es cuadrada y
+# estrictamente diagonalmente dominante.
+# ---------------------------------------------------------------------
+
+def test_ej11_es_diagonalmente_dominante_true():
+    A = np.array([[5, 1, 1],
+                  [1, 4, 1],
+                  [1, 1, 3]])
+    assert es_diagonalmente_dominante(A) is True
+
+
+def test_ej11_es_diagonalmente_dominante_false():
+    A = np.array([[1, 2, 1],
+                  [1, 4, 1],
+                  [1, 1, 3]])
+    assert es_diagonalmente_dominante(A) is False
+
+
+# ---------------------------------------------------------------------
+# Ejercicio 12: matriz_circulante(v) -> primer fila = v, cada fila
+# siguiente es una permutacion ciclica hacia la derecha de la anterior.
+# ---------------------------------------------------------------------
+
+def test_ej12_matriz_circulante():
+
+    v = np.array([1, 2, 3])
+    esperado = np.array([[1, 2, 3],
+                         [3, 1, 2],
+                         [2, 3, 1]])
+    np.testing.assert_array_equal(matriz_circulante(v), esperado)
+
+
+# ---------------------------------------------------------------------
+# Ejercicio 13: matriz_vandermonde(v) -> fila i-esima = potencia
+# (i-1)-esima de los elementos de v.
+# ---------------------------------------------------------------------
+
+def test_ej13_matriz_vandermonde():
+    v = np.array([1, 2, 3])
+    esperado = np.array([[1, 1, 1],
+                         [1, 2, 3],
+                         [1, 4, 9]])
+    np.testing.assert_array_equal(matriz_vandermonde(v), esperado)
+
+
+# ---------------------------------------------------------------------
+# Ejercicio 14: numero_aureo(n) -> estima phi como F(k+1)/F(k) usando la
+# formulacion matricial de Fibonacci.
+# ---------------------------------------------------------------------
+
+def test_ej14_numero_aureo_converge():
+    phi = (1 + 5 ** 0.5) / 2  # 1.6180339887...
+    estimado = numero_aureo(30)
+    assert estimado == pytest.approx(phi, abs=1e-5)
+
+
+# ---------------------------------------------------------------------
+# Ejercicio 15: matriz_fiboncacci(n) -> a_ij = F(i+j), F0=0, F1=1.
+# ---------------------------------------------------------------------
+
+def test_ej15_matriz_fiboncacci():
+    n = 4
+    esperado = np.array([[fibonacci(i + j) for j in range(n)] for i in range(n)])
+    np.testing.assert_array_equal(matriz_fiboncacci(n), esperado)
+
+
+# ---------------------------------------------------------------------
+# Ejercicio 16: matriz_hilbert(n) -> h_ij = 1 / (i+j+1).
+# ---------------------------------------------------------------------
+
+def test_ej16_matriz_hilbert():
+    n = 3
+    esperado = np.array([[1 / (i + j + 1) for j in range(n)] for i in range(n)])
+    np.testing.assert_allclose(matriz_hilbert(n), esperado)
+
+
+# ---------------------------------------------------------------------
+# Ejercicio 17: rutina que evalua, en 100 puntos equiespaciados entre
+# -1 y 1, los polinomios:
+#   x^5 - x^4 + x^3 - x^2 + x - 1
+#   x^2 + 3
+#   x^10 - 2
+#
+# La consigna no fija una firma/formato de retorno concreto. En labo0.py
+# quedo implementada como polinomios(v), que recibe el vector v de
+# coeficientes (v[k] es el coeficiente de x^k) de UN polinomio y devuelve
+# su evaluacion en 100 puntos equiespaciados entre -1 y 1. Se llama una
+# vez por polinomio.
+# ---------------------------------------------------------------------
+
+def test_ej17_polinomios():
+    x = np.linspace(-1, 1, 100)
+
+    v1 = np.array([-1, 1, -1, 1, -1, 1])  # x^5 - x^4 + x^3 - x^2 + x - 1
+    v2 = np.array([3, 0, 1])              # x^2 + 3
+    v3 = np.array([-2, 0, 0, 0, 0, 0, 0, 0, 0, 1])  # x^10 - 2
+
+    p1 = polinomios(v1)
+    p2 = polinomios(v2)
+    p3 = polinomios(v3)
+
+    esperado_p1 = x**5 - x**4 + x**3 - x**2 + x - 1
+    esperado_p2 = x**2 + 3
+    esperado_p3 = x**10 - 2
+
+    assert len(p1) == len(x)
+    np.testing.assert_allclose(p1, esperado_p1)
+    np.testing.assert_allclose(p2, esperado_p2)
+    np.testing.assert_allclose(p3, esperado_p3)
+
+
+# ---------------------------------------------------------------------
+# Ejercicio 18: row_echelon(A) modificado con pivoteo parcial: en cada
+# pivot, si hay otro elemento de la misma columna con modulo mayor, se
+# intercambian las filas antes de eliminar.
+#
+# La consigna asume una funcion row_echelon preexistente (de otra
+# practica) que aca no esta definida todavia; se testea el contrato
+# esperado: devuelve la forma escalonada de A, usando pivoteo parcial
+# para evitar pivotes chicos/nulos.
+# ---------------------------------------------------------------------
+
+def test_ej18_row_echelon_forma_triangular():
+    A = np.array([[2.0, 1.0], [4.0, 3.0]])
+    resultado = row_echelon(A.copy())
+    assert resultado is not None
+    # Forma escalonada: por debajo de la diagonal debe quedar (aprox) 0.
+    assert resultado[1][0] == pytest.approx(0.0, abs=1e-9)
+
+
+def test_ej18_row_echelon_pivotea_para_evitar_pivot_cero():
+    # Sin pivoteo, el primer pivote es 0 y la eliminacion falla
+    # (division por cero). Con pivoteo parcial se intercambian las
+    # filas y el calculo se completa con exito.
+    A = np.array([[0.0, 1.0], [1.0, 1.0]])
+    resultado = row_echelon(A.copy())
+    assert resultado is not None
+    assert np.all(np.isfinite(resultado))
+    assert resultado[1][0] == pytest.approx(0.0, abs=1e-9)
