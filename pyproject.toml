@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "alc"
+version = "0.1.0"
+description = "Modulo ALC - Algebra Lineal Computacional, 2C 2026"
+requires-python = ">=3.10"
+dependencies = ["numpy"]
+
+[project.optional-dependencies]
+# Lo que hace falta para tests, labos (graficos, notebooks) y el TP
+dev = ["pytest", "matplotlib", "pandas", "jupyter"]
+
+[tool.setuptools]
+packages = ["alc"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Permite correr pytest sin instalar el paquete
+pythonpath = ["."]

@@ -1,4 +1,15 @@
-.vscode/
+# Entornos virtuales
 venv/
-.pytest_cache/
+.venv/
+
+# Editores
+.vscode/
+
+# Python
 __pycache__/
+*.egg-info/
+build/
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/
