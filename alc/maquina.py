@@ -19,8 +19,11 @@ def error_relativo(x, y):
 
 
 def matricesIguales(A, B):
-    """
-    Devuelve True si ambas matrices son iguales y False en otro caso.
-    Considerar que las matrices pueden tener distintas dimensiones, ademas de distintos valores.
-    """
-    raise NotImplementedError("Implementar matricesIguales")
+  if A.shape != B.shape:
+    return False
+  else:
+    for i in range(A.shape[0]):
+      for j in range(A.shape[1]):
+        if abs(A[i][j] - B[i][j]) > np.finfo('float32').eps:
+          return False
+  return True
