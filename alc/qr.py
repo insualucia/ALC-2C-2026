@@ -16,6 +16,7 @@ def QR_con_GS(A, tol=1e-12, retorna_nops=False):
     # TODO: retorna_nops todavia no esta implementado
     n = A.shape[0]
     m = A.shape[1]
+    n_ops = 0
     if n != m:
         return None
 
@@ -26,16 +27,19 @@ def QR_con_GS(A, tol=1e-12, retorna_nops=False):
         u = A[:, j]
         for i in range(j):
             R[i, j] = productoInterno(Q[:, i], A[:, j])
+            n_ops += 2*n - 1  
             u = u - R[i, j] * Q[:, i]
+            n_ops += 2*n 
 
         normaU = norma(u, 2)
-
+        n_ops += 2*n 
         if normaU < tol:
             R[j, j] = 0.0
             Q[:, j] = np.zeros(n)
         else:
             R[j, j] = normaU
             Q[:, j] = u / normaU
+            n_ops += n  
 
     return Q, R
 
