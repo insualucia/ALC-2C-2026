@@ -111,8 +111,14 @@ def elim_gaussiana(A):
     return L, U, cant_op
 
 def esSDP(A, atol=1e-8):
-    """
-    Checkea si la matriz A es simetrica definida positiva (SDP) usando
-    la factorizacion LDV.
-    """
-    raise NotImplementedError("Implementar esSDP")
+    n = A.shape[1]
+    for i in range(n):
+        for j in range(n):
+            if abs(A[i, j] - A[j, i]) > atol:
+                return False
+    L, D, V = calculaLDV(A)
+    for i in range(n):
+        if D[i, i] <= atol:
+            return False
+    return True
+            
