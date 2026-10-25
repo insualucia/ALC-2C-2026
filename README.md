@@ -64,5 +64,5 @@ pytest -k normaMatMC      # una función
 | L03 | `normas.py` | — |
 | L04 | `lu.py` | — |
 | L05 | `qr.py` | — |
-| L06 | `autovalores.py` | `diagRH` |
+| L06 | `autovalores.py` | — |
 | L07 | `markov.py` | todo (`nucleo` depende de `diagRH`) |

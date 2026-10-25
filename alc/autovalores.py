@@ -1,7 +1,11 @@
-"""L06 - Metodo de la potencia y diagonalizacion (EN PROGRESO)."""
+"""L06 - Metodo de la potencia y diagonalizacion."""
 import numpy as np
 
-from .basicos import calcularAx, esSimetrica, productoInterno
+from .basicos import (
+    calcularAx, esSimetrica, multiplicacionDeMatrices, productoExterno,
+    productoInterno, traspuesta,
+)
+from .normas import norma
 
 
 def transformacion_de_f(A, v):
@@ -50,4 +54,40 @@ def diagRH(A, tol=1e-15, K=1000):
     if not esSimetrica(A):
         return None
 
-    # TODO: resolver
+    n = A.shape[0]
+    if n == 1:
+        return np.eye(1), np.array(A, dtype=float)
+
+    v1, l1, _ = metpot2k(A, tol, K)
+
+    # reflector de Householder que lleva v1 a e1
+    w = -v1
+    w[0] += 1
+    norma_w = norma(w, 2)
+    if norma_w < tol:
+        # v1 ya es e1, no hace falta reflejar
+        H = np.eye(n)
+    else:
+        H = np.eye(n) - 2 * productoExterno(w, w) / norma_w ** 2
+
+    B = multiplicacionDeMatrices(multiplicacionDeMatrices(H, A), traspuesta(H))
+
+    if n == 2:
+        return H, B
+
+    # B es simetrica en teoria, pero no exactamente por el redondeo: sin esto
+    # la llamada recursiva devolveria None
+    A_monio = B[1:, 1:]
+    A_monio = (A_monio + traspuesta(A_monio)) / 2
+    S_monio, D_monio = diagRH(A_monio, tol, K)
+
+    D = np.zeros((n, n))
+    D[0, 0] = l1
+    D[1:, 1:] = D_monio
+
+    S_bloque = np.zeros((n, n))
+    S_bloque[0, 0] = 1
+    S_bloque[1:, 1:] = S_monio
+    S = multiplicacionDeMatrices(H, S_bloque)
+
+    return S, D
