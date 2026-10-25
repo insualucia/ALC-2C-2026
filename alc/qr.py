@@ -70,35 +70,47 @@ def QR_con_HH(A, tol=1e-12, extras=False):
     Q = np.eye(m)
     R = np.array(A, dtype=float)
 
+
+    if extras:
+        R_matrices = [R.copy()]
+        Q_matrices = [Q.copy()]
+
     for j in range(n):
         columnaDesdeDiag = R[j:, j]
         norma_col = norma(columnaDesdeDiag, 2)
 
         if norma_col >= tol:
-            if columnaDesdeDiag[0] != 0:
-                alfa = -np.sign(columnaDesdeDiag[0]) * norma_col
-            else:
-                alfa = -np.sign(columnaDesdeDiag[0]) * -norma_col
+            signo = 1.0 if columnaDesdeDiag[0] >= 0 else -1.0
+            alfa = -signo * norma_col
 
-        v = columnaDesdeDiag.copy()
-        v[0] -= alfa
-        norma_v = norma(v, 2)
+            v = columnaDesdeDiag.copy()
+            v[0] -= alfa
+            norma_v = norma(v, 2)
 
-        if norma_v > tol:
-            v = v / norma_v
+            if norma_v > tol:
+                v = v / norma_v
 
-            # v^T R  ==  R^T v
-            vR = calcularAx(traspuesta(R[j:, j:]), v)
-            R[j:, j:] -= 2.0 * productoExterno(v, vR)
-            Qv = calcularAx(Q[:, j:], v)
-            Q[:, j:] -= 2.0 * productoExterno(Qv, v)
+                # v^T R  ==  R^T v
+                vR = calcularAx(traspuesta(R[j:, j:]), v)
+                R[j:, j:] -= 2.0 * productoExterno(v, vR)
+                Qv = calcularAx(Q[:, j:], v)
+                Q[:, j:] -= 2.0 * productoExterno(Qv, v)
+
+        if extras:
+            R_matrices.append(R.copy())
+            Q_matrices.append(Q.copy())
 
     for i in range(m):
         for j in range(min(i, n)):
             if abs(R[i, j]) < tol:
                 R[i, j] = 0.0
 
-    return Q, R
+    if extras:
+        R_matrices[-1] = R.copy()   # que coincida con el R final filtrado
+        extra_info = {'R_matrices': R_matrices, 'Q_matrices': Q_matrices}
+        return Q, R, extra_info
+    else:
+        return Q, R
 
 
 def calculaQR(A, metodo='RH', tol=1e-12):
