@@ -294,6 +294,33 @@ def polinomios(v):
 # cada pivot si no hay otro elemento de la misma columna con modulo mayor
 # (en valor absoluto). En caso afirmativo hacer el swap de las filas. Esta
 # operatoria permite tener mayor estabilidad numerica.
-def row_echelon(A):
-    # TODO: resolver
-    pass
+# Parte de la version recursiva del notebook de L00: en vez de tomar como
+# pivot el primer elemento no nulo de la columna, toma el de mayor modulo.
+def row_echelon(M):
+    A = np.copy(M)
+    if issubclass(A.dtype.type, np.integer):
+        A = A.astype(float)
+    # Si A no tiene filas o columnas, ya esta escalonada
+    f, c = A.shape
+    if f == 0 or c == 0:
+        return A
+    # buscamos el elemento de mayor modulo de la primera columna
+    i = 0
+    for k in range(1, f):
+        if abs(A[k, 0]) > abs(A[i, 0]):
+            i = k
+    if A[i, 0] == 0:
+        # si todos los elementos de la primera columna son ceros
+        # escalonamos filas desde la segunda columna
+        B = row_echelon(A[:, 1:])
+        return np.block([A[:, :1], B])
+    # swap de filas para dejar el de mayor modulo como pivot
+    if i > 0:
+        intercambiarFilas(A, 0, i)
+    # a las filas subsiguientes les restamos un multiplo de la primera
+    for k in range(1, f):
+        sumar_fila_multiplo(A, k, 0, -A[k, 0] / A[0, 0])
+        A[k, 0] = 0.0  # evita que quede basura de redondeo debajo del pivot
+    # escalonamos desde la segunda fila y segunda columna en adelante
+    B = row_echelon(A[1:, 1:])
+    return np.block([[A[:1, :]], [A[1:, :1], B]])
