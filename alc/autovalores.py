@@ -21,10 +21,10 @@ def metpot2k(A, tol=1e-15, K=1000):
     Retorna vector v, autovalor lambda y numero de iteracion realizadas k
     """
     v = np.zeros(A.shape[1])
-    while v == 0:
+    while np.all(v == 0):
         v = np.random.rand(A.shape[1])
 
-    v_monio = transformacion_de_f(A, v)
+    v_monio = transformacion_de_f(A, transformacion_de_f(A, v))
     e = productoInterno(v_monio, v)
     k = 0
 
@@ -36,7 +36,7 @@ def metpot2k(A, tol=1e-15, K=1000):
 
     l = productoInterno(v_monio, calcularAx(A, v_monio))
 
-    return l, v_monio, k
+    return v_monio, l, k
 
 
 def diagRH(A, tol=1e-15, K=1000):
