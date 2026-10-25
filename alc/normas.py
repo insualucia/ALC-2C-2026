@@ -2,6 +2,7 @@
 import numpy as np
 
 from .basicos import calcularAx
+from .lu import inversa
 
 
 def norma(x, p):
@@ -64,8 +65,7 @@ def condMC(A, p, Np=10000):
     """
     Devuelve el numero de condicion de A usando la norma inducida p.
     """
-    # TODO: reemplazar np.linalg.inv por inversa() del L04 antes de entregar
-    A_inv = np.linalg.inv(A)
+    A_inv = inversa(A)
     return normaMatMC(A, p, p, Np)[0] * normaMatMC(A_inv, p, p, Np)[0]
 
 
@@ -74,5 +74,4 @@ def condExacto(A, p):
     Que devuelve el numero de condicion de A a partir de la formula de
     la ecuacion (1) usando la norma p.
     """
-    # TODO: reemplazar np.linalg.inv por inversa() del L04 antes de entregar
-    return normaExacta(A, p) * normaExacta(np.linalg.inv(A), p)
+    return normaExacta(A, p) * normaExacta(inversa(A), p)

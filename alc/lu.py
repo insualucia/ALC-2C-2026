@@ -60,7 +60,7 @@ def elim_gaussiana(A):
     cant_op = 0
     m=A.shape[0]
     n=A.shape[1]
-    Ac = A.copy()
+    Ac = A.astype(float)
     
     if m!=n:
         print('Matriz no cuadrada')
