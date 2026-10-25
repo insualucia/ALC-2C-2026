@@ -3,24 +3,7 @@ import numpy as np
 
 
 def calculaLU(A):
-    cant_op = 0
-    m=A.shape[0]
-    n=A.shape[1]
-    if m!=n:
-            return None
-    
-    L = np.eye(n)
-    U = np.zeros((n, n))
-    for k in range(n-1):
-            for i in range(k+1, n):
-                multiplicador = A[i, k] / A[k, k]
-                cant_op += 1
-                L[i, k] = multiplicador
-                for j in range(k + 1, n):
-                    U[i, j] = A[i,j] - multiplicador * L[k, j]
-                    cant_op += 2
-    
-    return L, U, cant_op
+    return elim_gaussiana(A)
 
 
 def res_tri(L, b, inferior):
@@ -86,7 +69,7 @@ def elim_gaussiana(A):
     ## desde aqui -- CODIGO A COMPLETAR
     for k in range(n-1):
         for i in range(k+1, n):
-            multiplicador = A[i, k] / A[k, k]
+            multiplicador = Ac[i, k] / Ac[k, k]
             cant_op += 1
             Ac[i, k] = multiplicador
             for j in range(k + 1, n):
@@ -110,7 +93,7 @@ def elim_gaussiana(A):
     
     return L, U, cant_op
 
-def esSDP(A, atol=1e-8):
+def esSDP(A, atol=1e-10):
     n = A.shape[1]
     for i in range(n):
         for j in range(n):
