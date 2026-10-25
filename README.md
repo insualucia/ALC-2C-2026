@@ -58,11 +58,11 @@ pytest -k normaMatMC      # una función
 
 | Labo | Archivo | Pendiente |
 |------|---------|-----------|
-| L00 | `basicos.py` | `row_echelon` |
-| L01 | `maquina.py` | `matricesIguales` |
+| L00 | `basicos.py` | — |
+| L01 | `maquina.py` | — |
 | L02 | `transformaciones.py` | — |
-| L03 | `normas.py` | reemplazar `np.linalg.inv` por `inversa` (L04) |
-| L04 | `lu.py` | todo (`calculaLU`, `res_tri`, `inversa`, `calculaLDV`, `esSDP`) |
-| L05 | `qr.py` | `retorna_nops` en `QR_con_GS`, `extras` en `QR_con_HH` |
-| L06 | `autovalores.py` | `metpot2k` (en progreso), `diagRH` |
-| L07 | `markov.py` | todo |
+| L03 | `normas.py` | — |
+| L04 | `lu.py` | — |
+| L05 | `qr.py` | `retorna_nops` en `QR_con_GS` (ya cuenta `n_ops`, falta devolverlo) |
+| L06 | `autovalores.py` | `diagRH` |
+| L07 | `markov.py` | todo (`nucleo` depende de `diagRH`) |
