@@ -63,6 +63,6 @@ pytest -k normaMatMC      # una función
 | L02 | `transformaciones.py` | — |
 | L03 | `normas.py` | — |
 | L04 | `lu.py` | — |
-| L05 | `qr.py` | `retorna_nops` en `QR_con_GS` (ya cuenta `n_ops`, falta devolverlo) |
+| L05 | `qr.py` | — |
 | L06 | `autovalores.py` | `diagRH` |
 | L07 | `markov.py` | todo (`nucleo` depende de `diagRH`) |

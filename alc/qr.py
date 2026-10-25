@@ -13,7 +13,6 @@ def QR_con_GS(A, tol=1e-12, retorna_nops=False):
     retorna matrices Q y R calculadas con Gram Schmidt (y como tercer argumento opcional, el numero de operaciones).
     Si la matriz A no es de n x n, debe retornar None
     """
-    # TODO: retorna_nops todavia no esta implementado
     n = A.shape[0]
     m = A.shape[1]
     n_ops = 0
@@ -41,6 +40,8 @@ def QR_con_GS(A, tol=1e-12, retorna_nops=False):
             Q[:, j] = u / normaU
             n_ops += n  
 
+    if retorna_nops:
+        return Q, R, n_ops
     return Q, R
 
 
