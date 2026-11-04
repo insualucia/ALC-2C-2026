@@ -43,12 +43,18 @@ def svd_reducida(A, k="max", tol=1e-15):
             S[i] = np.sqrt(lam[i])
 
     # cuantos retener: sigma > tol y lambda no es solo ruido de redondeo
-    r = 0
-    for i in range(n):
-        if S[i] > tol and lam[i] > 1e-12 * lam[0]:
-            r += 1
-    if k != "max":
-        r = min(r, int(k))
+    if k == "max":
+        r = 0
+        for i in range(n):
+            if S[i] > tol and lam[i] > 1e-12 * lam[0]:
+                r += 1
+    else:
+        # k explicito: se retienen los k pedidos aunque sean chicos (los
+        # que sean exactamente cero se descartan para no dividir por 0)
+        r = 0
+        for i in range(min(int(k), n)):
+            if S[i] > tol:
+                r += 1
 
     # u_i = A v_i / sigma_i
     AV = multiplicacionDeMatrices(A, V[:, :r])
