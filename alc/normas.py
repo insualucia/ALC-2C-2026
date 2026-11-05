@@ -7,11 +7,11 @@ from .lu import inversa
 
 def norma(x, p):
     """
-    Devuelve la norma p del vector x.
+    Devuelve la norma p del vector x (p numérico o 'inf').
     """
     if p == 'inf':
         return float(np.max(np.abs(x)))
-    return float(np.pow(np.sum(np.pow(np.abs(x), p)), (1 / p)))
+    return float(np.sum(np.abs(x) ** p) ** (1 / p))
 
 
 def normaliza(X, p):

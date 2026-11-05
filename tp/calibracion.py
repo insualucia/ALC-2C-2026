@@ -1,8 +1,6 @@
 """TP - Calibracion de la camara (DLT con puntos 3D)."""
 import numpy as np
-from alc.basicos import multiplicacionDeMatrices, traspuesta
-from alc.lu import res_tri
-from alc.svd import svd_reducida
+from alc import *
 
 
 def obtenerQ3d(imgPts, objPts):
@@ -60,58 +58,82 @@ def _norma(v):
     return np.sqrt(np.sum(v * v))
 
 
-def devolverMatricesCalibracion3d(M):
+def devolverMatricesCalibracion3d(M, imponerAlfasIguales=False, imponerGammaCero=False):
+
     """
-    Descompone la matriz de proyeccion M = K [R | t] (3 x 4) resolviendo las
-    incognitas de la ecuacion M = [[au r1 + g r2 + u0 r3 | au t1 + g t2 + u0 t3],
-    [av r2 + v0 r3 | av t2 + v0 t3], [r3 | t3]] (ri = filas de R, g = K12).
-    M del DLT esta definida salvo escala y signo: se la divide por la norma de
-    su tercera fila (que en la ecuacion es la fila r3, de norma 1). Luego se
-    despeja de abajo hacia arriba:
-      fila 3: r3, t3
-      fila 2: v0 = A2.r3,  av = ||A2 - v0 r3||,  r2 = (A2 - v0 r3) / av
-      fila 1: u0 = A1.r3,  g = A1.r2,  au = ||A1 - g r2 - u0 r3||,  r1 = ...
-      t: se despeja de K t = b por sustitucion hacia atras.
-    donde A1, A2, A3 son las filas de la parte 3 x 3 de M y b su ultima columna.
-    M: matriz de 3 x 4.
-    Retorna R (3 x 3), t (vector de 3) y K (3 x 3, con K33 = 1).
+    Descompone la matriz de proyección M = K [R t] en sus parámetros
+    intrínsecos (K) y extrínsecos (R, t), imponiendo que R sea ortonormal.
+
+    Parámetros:
+        M : array (3, 4), matriz de proyección (a menos de escala), por
+            ejemplo la que devuelve resolverDLT3D.
+        imponerAlfasIguales : bool, opcional. Si es True, fuerza alfa_u = alfa_v
+            (píxeles cuadrados), reemplazando ambos por su promedio.
+        imponerGammaCero : bool, opcional. Si es True, fuerza K12 = gamma = 0
+            (ejes del sensor perpendiculares).
+
+    Devuelve:
+        R : array (3, 3), matriz de rotación (ortonormal).
+        t : array (3,), vector de traslación, en las unidades del mundo.
+        K : array (3, 3), matriz de parámetros intrínsecos, con K33 = 1.
     """
-    M = np.asarray(M, dtype=float)
 
-    # escala: la tercera fila de [R | t] tiene norma 1 en su parte de rotacion
-    M = M / _norma(M[2, 0:3])
-    A1 = M[0, 0:3]
-    A2 = M[1, 0:3]
-    A3 = M[2, 0:3]
-    b = M[:, 3]
+    M = np.array(M, dtype=float)
 
-    # fila 3
-    r3 = A3
+    # --- 1. Sacar la escala desconocida: dividir M por la norma de m3 ---
+    # Las tres primeras entradas de la fila 3 son c * r3, y r3 tiene norma 1.
+    M = M / norma(M[2, 0:3], 2)
 
-    # fila 2: r2 es la componente de A2 ortogonal a r3
-    v0 = np.sum(A2 * r3)
-    w2 = A2 - v0 * r3
-    alfa_v = _norma(w2)
-    r2 = w2 / alfa_v
+    # --- 2. Elegir el signo: la mira tiene que estar delante de la cámara ---
+    # t3 = M[2, 3] tiene que ser positivo; si no, cambiamos el signo de M.
+    if M[2, 3] < 0:
+        M = -M
 
-    # fila 1: r1 es la componente de A1 ortogonal a r2 y r3
-    u0 = np.sum(A1 * r3)
-    gamma = np.sum(A1 * r2)
-    w1 = A1 - gamma * r2 - u0 * r3
-    alfa_u = _norma(w1)
-    r1 = w1 / alfa_u
+    # Bloque izquierdo (K R): m1, m2, m3 son las tres primeras entradas de cada fila
+    m1 = M[0, 0:3]
+    m2 = M[1, 0:3]
+    m3 = M[2, 0:3]
 
-    K = np.array([[alfa_u, gamma, u0],
-                  [0.0, alfa_v, v0],
-                  [0.0, 0.0, 1.0]])
+    # --- 3. Despeje de abajo hacia arriba usando la ortonormalidad de R ---
+    # Fila 3: m3 = r3
+    r3 = m3
+
+    # Fila 2: m2 = alfa_v r2 + v0 r3
+    v0 = productoInterno(m2, r3)                    # r3 . m2 = v0
+    alfaV = norma(m2 - v0 * r3, 2)                  # ||m2 - v0 r3|| = alfa_v
+    r2 = (m2 - v0 * r3) / alfaV
+
+    # Fila 1: m1 = alfa_u r1 + gamma r2 + u0 r3
+    u0 = productoInterno(m1, r3)                    # r3 . m1 = u0
+    gamma = productoInterno(m1, r2)                 # r2 . m1 = gamma
+    alfaU = norma(m1 - gamma * r2 - u0 * r3, 2)     # ||m1 - gamma r2 - u0 r3|| = alfa_u
+    r1 = (m1 - gamma * r2 - u0 * r3) / alfaU
+
+    # Armamos R con r1, r2, r3 como filas
     R = np.vstack([r1, r2, r3])
-    t = res_tri(K, b, False)
 
-    # R debe ser una rotacion (det = +1); si no, M estaba con el signo opuesto
-    # (-M = K (-R) [I | -t]), asi que se cambia el signo de R y t
-    if _productoTriple(R[:, 0], R[:, 1], R[:, 2]) < 0:
-        R = -R
-        t = -t
+    # --- 4. Restricciones opcionales sobre K (Ejercicio 2d) ---
+    if imponerGammaCero:
+        gamma = 0.0
+    if imponerAlfasIguales:
+        alfaPromedio = (alfaU + alfaV) / 2
+        alfaU = alfaPromedio
+        alfaV = alfaPromedio
+
+    K = np.array([[alfaU, gamma, u0],
+                  [0.0,   alfaV, v0],
+                  [0.0,   0.0,   1.0]])
+
+    # --- 5. Traslación: la última columna de M es K t (sistema triangular) ---
+    # Se resuelve por sustitución hacia atrás, con la K ya definida.
+    m14 = M[0, 3]
+    m24 = M[1, 3]
+    m34 = M[2, 3]
+    t3 = m34
+    t2 = (m24 - v0 * t3) / alfaV
+    t1 = (m14 - gamma * t2 - u0 * t3) / alfaU
+    t = np.array([t1, t2, t3])
+
     return R, t, K
 
 

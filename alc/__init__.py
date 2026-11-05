@@ -35,3 +35,5 @@ from .markov import (
     transiciones_al_azar_continuas, transiciones_al_azar_uniformes,
     nucleo, crea_rala, multiplica_rala_vector,
 )
+# L08 - SVD
+from .svd import svd_reducida
