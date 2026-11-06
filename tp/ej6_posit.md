@@ -106,6 +106,11 @@ Se eligen las 4 esquinas exteriores de la H y su centro $M_0$: están todas en $
 - La H aparece **girada 90°**: su "arriba" apunta a la izquierda de la imagen, así que el punto blanco (abajo a la izquierda) queda junto a la esquina sup. izq. de la H.
 - El centro $M_0$ se toma como el cruce de las diagonales de las 4 esquinas: con perspectiva es la imagen del centro real (el centroide de los píxeles no lo es).
 
+## 5b. Qué muestra la notebook
+
+- Celda principal: puntos, POSIT, pose, pose objetivo y figura. En la figura derecha se marca el **punto blanco**: su píxel $(404,1124)$ se lleva al plano de la H con la pose estimada (rayo $K^{-1}(u,v,1)^T$ pasado al sistema de la H, cortado con $W=0$; da $(U,V)\approx(-0{,}235;\,0{,}298)$ m) y se proyecta con $(R_d,t_d)$: queda arriba a la izquierda de la H.
+- Celda de funciones (6.b a 6.e): una iteración a mano con $\varepsilon_i=0$ (`calculoLambdaMu`, `calcularSalidaPOSIT` para las dos soluciones, `evaluarPose`) y el RMS de `aplicarPOSIT` según `MaxIt`: 8,72 px (1 it.), 7,03 (2), 3,82 (3), 2,49 (5), 2,14 (10), 2,03 (100).
+
 ## 6. Resultado
 
 $Z_0\approx4{,}46$ m, RMS $\approx2{,}0$ px, $R$ ortonormal ($\det R=1$). Cámara en $C=-R^Tt=(0{,}67;\,0{,}76;\,4{,}49)$ m en el sistema de la H; eje óptico a $\approx19^\circ$ de la vertical.
