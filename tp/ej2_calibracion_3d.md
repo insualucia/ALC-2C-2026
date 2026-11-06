@@ -38,37 +38,54 @@ Se eligió modificar la función y no armar un camino alternativo dentro de `res
 **Validación.** Para la fila 0, `‖Qm‖ = 0.008223`, igual al σ_min obtenido con `np.linalg.svd` (usado solo como verificación fuera del código entregable). Error máximo de reproyección con M: 0.57 px (fila 0), 0.80 px (fila 50), 1.36 px (fila 100).
 
 ## 2c — `devolverMatricesCalibracion3d(M)`
-
-**Qué hace.** Descompone M = K [R | t] y devuelve R, t, K con K₃₃ = 1.
-
-**Método.** Se plantean las incógnitas de la ecuación de la página 11 del enunciado, M = K[R | t], escrita fila por fila (rᵢ son las filas de R, γ = K₁₂):
-
+ 
+**Qué hace.** Descompone M = K [R | t] y devuelve R, t, K, con R ortonormal y K₃₃ = 1.
+ 
+**Método: despeje analítico de abajo hacia arriba.** Es el camino que sugiere el enunciado: en la página 11 muestra M escrita entrada por entrada en función de K, R y t, y el 2c pide imponer R·Rᵀ = I. Si m₁, m₂, m₃ son las tres primeras entradas de cada fila de M (el bloque 3×3, que es K·R) y r₁, r₂, r₃ las filas de R:
+ 
 ```
-fila 1:  αu·r₁ + γ·r₂ + u₀·r₃  |  αu·t₁ + γ·t₂ + u₀·t₃
-fila 2:  αv·r₂ + v₀·r₃         |  αv·t₂ + v₀·t₃
-fila 3:  r₃                    |  t₃
+fila 1:  m₁ = αu·r₁ + γ·r₂ + u₀·r₃   |  m₁₄ = αu·t₁ + γ·t₂ + u₀·t₃
+fila 2:  m₂ = αv·r₂ + v₀·r₃          |  m₂₄ = αv·t₂ + v₀·t₃
+fila 3:  m₃ = r₃                     |  m₃₄ = t₃
 ```
-
-Hay 17 incógnitas (5 intrínsecos, 9 de R, 3 de t) y se tiene R·Rᵀ = I como 6 ecuaciones extra, que junto con los 12 elementos de M cierran el sistema. Se resuelve de abajo hacia arriba, con A₁, A₂, A₃ las filas de la parte 3×3 de M y b su última columna:
-
-1. **Escala.** M del DLT está definida salvo escala y signo (‖m‖ = 1 es arbitrario). En la ecuación, en cambio, la fila 3 de la parte 3×3 es r₃, de norma 1. Se divide M por ‖A₃‖ antes de resolver, y así el sistema es la ecuación del enunciado sin incógnita adicional.
-2. **Fila 3:** r₃ = A₃.
-3. **Fila 2:** v₀ = A₂·r₃ (porque r₂ ⊥ r₃), αv = ‖A₂ − v₀·r₃‖ y r₂ = (A₂ − v₀·r₃)/αv.
-4. **Fila 1:** u₀ = A₁·r₃, γ = A₁·r₂, αu = ‖A₁ − γ·r₂ − u₀·r₃‖ y r₁ = (A₁ − γ·r₂ − u₀·r₃)/αu.
-5. **Traslación:** t sale de K·t = b por sustitución hacia atrás (`res_tri`), porque K es triangular.
-
-Es Gram-Schmidt sobre las filas de A, de abajo hacia arriba. Equivale a la factorización RQ.
-
+ 
+Las incógnitas aparecen multiplicadas entre sí (por ejemplo αv·r₂), así que el sistema no es lineal. Pero como K es triangular superior, cada fila mezcla cada vez menos filas de R, y usando que R es ortonormal (‖rᵢ‖ = 1, rᵢ·rⱼ = 0) se despeja una incógnita por vez:
+ 
+1. **Escala.** El DLT devuelve M = c·K[R | t] con c desconocido, porque normaliza ‖m‖ = 1 sobre las 12 entradas y no sobre la fila 3. Entonces m₃ = c·r₃ y ‖m₃‖ = |c| (con los datos de la fila 0, ‖m₃‖ ≈ 1.26·10⁻⁴). Se divide toda M (incluida la última columna) por ‖m₃‖.
+2. **Signo.** Después de normalizar, M puede quedar multiplicada por −1. Se elige el signo que deja t₃ = m₃₄ > 0, es decir, la mira delante de la cámara. Si m₃₄ < 0, se usa −M.
+3. **Fila 3:** r₃ = m₃.
+4. **Fila 2.** Producto escalar con r₃ (r₂ ⊥ r₃, ‖r₃‖ = 1): v₀ = r₃·m₂. Despejando, m₂ − v₀·r₃ = αv·r₂, y tomando norma: αv = ‖m₂ − v₀·r₃‖. Luego r₂ = (m₂ − v₀·r₃)/αv.
+5. **Fila 1.** Igual: u₀ = r₃·m₁, γ = r₂·m₁, αu = ‖m₁ − γ·r₂ − u₀·r₃‖ y r₁ = (m₁ − γ·r₂ − u₀·r₃)/αu.
+6. **Traslación.** La última columna de M es K·t, un sistema triangular superior. Se resuelve por sustitución hacia atrás: t₃ = m₃₄, t₂ = (m₂₄ − v₀·t₃)/αv, t₁ = (m₁₄ − γ·t₂ − u₀·t₃)/αu.
+Los pasos 3 a 5 son Gram-Schmidt sobre las filas de K·R, de abajo hacia arriba, así que R sale ortonormal por construcción.
+ 
 **Decisiones.**
-- **Escala.** Se normaliza M antes de resolver (en lugar de tener λ como incógnita). Es equivalente y deja las ecuaciones idénticas a las del enunciado. Como la fila 3 de K es (0, 0, 1), K₃₃ = 1 queda por construcción.
-- **Signos.** αu y αv son normas, así que son positivos sin corregir nada. El único signo que queda es el de M: si det(R) < 0 se usa −M, es decir R → −R y t → −t, con la misma K. Se calcula det(R) con el producto triple, porque `np.linalg.det` no está permitido.
-- **Sin QR.** Se eliminaron `QR_con_HH`, las permutaciones con `[::-1]` y la corrección de signos de columnas que tenía la versión anterior (QR de AᵀJ). La versión con QR se contrastó con esta en 30 filas de datos reales, con M y −M: coinciden hasta 5·10⁻¹³ en R, t y K.
-- Solo se usan operaciones permitidas: productos escalares con `np.sum`, `np.sqrt` y `res_tri` del módulo.
-
+- **Escala y K₃₃.** Normalizar M antes de despejar deja las ecuaciones idénticas a las del enunciado, sin una incógnita de escala extra. K₃₃ = 1 queda por construcción.
+- **Signos.** αu y αv son normas, así que salen positivos sin corrección. El signo de M se fija con t₃ > 0. En los datos probados, eso también deja det(R) = +1 (verificado con M y −M).
+- **Funciones del módulo ALC.** Los productos escalares usan `productoInterno` y las normas `norma(·, 2)`. No se usa ninguna factorización de librería ni `@`.
+## 2d — Restricciones opcionales: `imponerAlfasIguales` e `imponerGammaCero`
+ 
+**Qué hace.** `devolverMatricesCalibracion3d(M, imponerAlfasIguales=False, imponerGammaCero=False)`:
+- `imponerGammaCero=True`: fuerza K₁₂ = γ = 0 (ejes del sensor perpendiculares).
+- `imponerAlfasIguales=True`: fuerza αu = αv (píxeles cuadrados), reemplazando ambos por su promedio.
+**Método.** Primero se hace la descomposición libre del 2c (R se calcula con los valores libres, así sigue siendo ortonormal). Después se fuerzan las restricciones en K y se recalcula t por sustitución hacia atrás con la K modificada.
+ 
+**Limitación.** Es una aproximación: K y R ya no reproducen M exactamente. La forma exacta sería volver a estimar M con la restricción incluida, y eso es un problema no lineal. Por eso el error de reproyección puede subir.
+ 
+**Resultados** (error máximo de reproyección, en px; idénticos con M y −M):
+ 
+| Fila | Libre | αu = αv | γ = 0 | Ambas |
+|---|---|---|---|---|
+| 0 | 0.57 | 0.96 | 0.57 | 0.96 |
+| 50 | 0.80 | 0.90 | 2.72 | 2.56 |
+| 100 | 1.36 | 1.45 | 1.36 | 1.32 |
+ 
+En las filas 0 y 100, γ libre ya es casi 0 (−0.02 y −0.52), y forzarlo no cambia el error. En la fila 50, γ libre da −3.23 y forzarlo a 0 sube el error a ~2.7 px. Igualar los α cuesta poco, porque αu y αv difieren en menos de un 0.6 %.
+ 
 ## `verificarCalibracion3d(M, R, t, K, imgPts, objPts)`
-
+ 
 Función auxiliar con los chequeos que se piden para dar por buena la descomposición:
-
+ 
 | Chequeo | Esperado | Resultado (filas 0, 50, 100; M y −M) |
 |---|---|---|
 | máx \|R·Rᵀ − I\| | ≈ 0 | ≤ 4.4·10⁻¹⁶ |
@@ -77,14 +94,15 @@ Función auxiliar con los chequeos que se piden para dar por buena la descomposi
 | máx \|K[R\|t] − M/escala\| | ≈ 0 | ≤ 3.3·10⁻¹⁶ |
 | Error de reproyección | del orden de 1 px | 0.57 / 0.80 / 1.36 px |
 | Z de cámara > 0 en todos los puntos | verdadero | verdadero |
-
-Probar con M y −M confirma que el manejo de signos hace que el resultado no dependa del signo arbitrario del DLT.
-
+ 
+Probar con M y −M confirma que elegir el signo con t₃ > 0 hace que el resultado no dependa del signo arbitrario del DLT.
+ 
 Para la fila 100: K ≈ [[418.8, −0.52, 357.8], [0, 416.5, 255.8], [0, 0, 1]]. Es plausible: αu ≈ αv, γ ≈ 0 y (u₀, v₀) cerca del centro de la imagen.
-
+ 
 ## Limitaciones y pendientes
-
+ 
 - **Normalización de Hartley:** no implementada. Q tiene un número de condición del orden de 6·10⁶ (σ_max/σ_min), y `svd_reducida` calcula la SVD diagonalizando QᵀQ, lo que lo eleva al cuadrado. Los resultados son buenos igual (error de reproyección ≈ 1 px), pero es una mejora a evaluar y comparar.
 - **Elección de la fila de detecciones:** solo se probó con las filas 0, 50 y 100. Falta decidir cuál usar para el resultado final: una sola fila, varias, o el promedio de las 210.
-- **2d:** falta el parámetro opcional para imponer αu = αv y/o K₁₂ = 0.
+- **2d:** las restricciones se imponen después de la descomposición libre (ver 2d). Estimar M con las restricciones incluidas sería más exacto, pero es un problema no lineal.
 - **Entrega:** la consigna pide un único `alc.py`. Estas funciones hay que incorporarlas ahí al armar la entrega.
+ 

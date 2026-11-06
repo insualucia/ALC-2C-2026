@@ -136,6 +136,38 @@ def devolverMatricesCalibracion3d(M, imponerAlfasIguales=False, imponerGammaCero
 
     return R, t, K
 
+def obtenerQ2d(imgPts, objPts):
+    """
+    Arma la matriz Q (2n x 9) del sistema Qh = 0 (ecuacion 11), para puntos coplanares.
+    imgPts: array de n x 2 con los (u, v) de cada punto en la imagen.
+    objPts: array de n x 2 con los (U, V) de cada punto en el plano del objeto (W = 0).
+            Si viene de n x 3, la tercera columna debe ser 0 y se ignora.
+    Retorna Q, donde cada punto aporta dos filas:
+        [P^T, 0, -u P^T]  y  [0, P^T, -v P^T],  con P = (U, V, 1).
+    """
+    imgPts = np.asarray(imgPts, dtype=float)
+    objPts = np.asarray(objPts, dtype=float)
+
+    # Si vienen coordenadas 3D, verificar que sean coplanares en W = 0
+    if objPts.shape[1] == 3 and np.any(np.abs(objPts[:, 2]) > 0):
+        raise ValueError("obtenerQ2d: los puntos deben tener W = 0 (plano del objeto).")
+
+    n = objPts.shape[0]
+    Q = np.zeros((2 * n, 9))
+    for i in range(n):
+        u = imgPts[i, 0]
+        v = imgPts[i, 1]
+        # Solo U y V: la columna de W desaparece porque W = 0
+        P = np.array([objPts[i, 0], objPts[i, 1], 1.0])
+        # Fila de u: h1^T P - u * h3^T P = 0
+        Q[2 * i, 0:3] = P
+        Q[2 * i, 6:9] = -u * P
+        # Fila de v: h2^T P - v * h3^T P = 0
+        Q[2 * i + 1, 3:6] = P
+        Q[2 * i + 1, 6:9] = -v * P
+    return Q
+
+
 
 def verificarCalibracion3d(M, R, t, K, imgPts, objPts, tol=1e-8):
     """
@@ -177,3 +209,4 @@ def verificarCalibracion3d(M, R, t, K, imgPts, objPts, tol=1e-8):
             "K_triangular": K_triangular, "dif_M": dif_M,
             "error_reproyeccion": error_reproyeccion,
             "delante_camara": delante_camara}
+
