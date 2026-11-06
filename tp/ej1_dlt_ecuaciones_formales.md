@@ -1,6 +1,6 @@
 # Ejercicio 1 — DLT, ecuaciones formales
 
-Es un ejercicio teórico, sin código propio. Las respuestas están en el notebook (`grupo_XX_TP.ipynb`, celdas "Respuesta 1.a" y "Respuesta 1.b"). Este documento analiza qué dicen, si son correctas y cómo se conectan con la implementación del Ej. 2 (`tp/calibracion.py`).
+Es un ejercicio teórico, sin código propio. Las respuestas están en el notebook (`grupo_LUxMundi_TP.ipynb`, celdas "Respuesta 1.a" y "Respuesta 1.b"). Este documento analiza qué dicen, si son correctas y cómo se conectan con la implementación del Ej. 2 (`tp/calibracion.py`).
 
 Setup: n correspondencias 3D–2D dan Q ∈ ℝ^(2n×12) (ecuación 6) y se busca m ≠ 0 con Qm = 0, o en presencia de ruido, `mín ‖Qm‖²` con ‖m‖ = 1 (ecuaciones 7 y 8).
 

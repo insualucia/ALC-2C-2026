@@ -110,7 +110,7 @@ Para la fila 100: K ≈ [[418.8, −0.52, 357.8], [0, 416.5, 255.8], [0, 0, 1]].
 - **2d:** las restricciones se imponen después de la descomposición libre (ver 2d). Estimar M con las restricciones incluidas sería más exacto, pero es un problema no lineal.
 - **Entrega:** la consigna pide un único `alc.py`. Estas funciones hay que incorporarlas ahí al armar la entrega.
  
-## Notebook (`grupo_XX_TP.ipynb`, celda del Ejercicio 2)
+## Notebook (`grupo_LUxMundi_TP.ipynb`, celda del Ejercicio 2)
 
 La celda carga `p_W_corners.txt` (con `delimiter=","`) y `detected_corners.txt`, y para las detecciones 0, 50 y 100 hace `obtenerQ3d` → `resolverDLT3D` → `devolverMatricesCalibracion3d` en las cuatro variantes (libre, αu = αv, γ = 0, ambas). Imprime K, R, t y el error máximo de reproyección con `verificarCalibracion3d`; para la variante libre también ‖R·Rᵀ − I‖, det(R) y si los puntos quedan delante de la cámara. Reproduce la tabla de 2d (0.57 / 0.96 / 0.57 / 0.96 px en la detección 0).
 - La carpeta del template se llama `" calib"` (con espacio); la celda la busca con `os.listdir`.

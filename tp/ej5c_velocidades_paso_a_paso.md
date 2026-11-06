@@ -6,7 +6,7 @@ pendiente de la posición contra el tiempo. Este archivo cuenta el recorrido com
 los números finales y las limitaciones están también en `ej5_salguero.md`.
 
 Código: `tp/calibracion.py` (`pendienteRecta`, `velocidadMedia`, `velocidadesLocales`),
-`tp/extraer_trayectorias.py` (medición de píxeles), celda del notebook `grupo_XX_TP.ipynb`.
+`tp/extraer_trayectorias.py` (medición de píxeles), celda del notebook `grupo_LUxMundi_TP.ipynb`.
 Test: `tp/test_ej5.py`.
 
 ## Paso 1 — Entender qué datos hay
