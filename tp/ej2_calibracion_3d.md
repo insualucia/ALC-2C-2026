@@ -10,6 +10,18 @@ Estado: implementados 2a, 2b y 2c. Pendiente: 2d (restricciones opcionales).
 
 Con n = 12 puntos, Q es de 24 × 12. Es más que el mínimo de 6 puntos que se deduce en el Ej. 1 (rango(Q) = 11), así que el sistema está sobredeterminado y se resuelve por mínimos cuadrados homogéneos.
 
+## Ecuaciones que se resuelven (de dónde sale Q)
+
+La cámara pinhole proyecta un punto del mundo $P=(U,V,W,1)^T$ con $\lambda\,(u,v,1)^T = M\,P$, donde $M=K\,[R\,|\,t]\in\mathbb R^{3\times4}$ (ecs. 1 y 2 del enunciado). Con $M=\begin{pmatrix}m_1^T\\m_2^T\\m_3^T\end{pmatrix}$ ($m_i\in\mathbb R^4$ son las filas) la tercera fila da $\lambda=m_3^TP$, y entonces
+
+$$u=\frac{m_1^TP}{m_3^TP},\quad v=\frac{m_2^TP}{m_3^TP}\;\Longrightarrow\;(m_1^T-u\,m_3^T)P=0,\quad(m_2^T-v\,m_3^T)P=0 .$$
+
+Son **dos ecuaciones lineales en las 12 entradas de $M$** por punto. Con $m=(m_1,m_2,m_3)\in\mathbb R^{12}$ cada punto aporta las filas $[P^T,\,0,\,-u\,P^T]$ y $[0,\,P^T,\,-v\,P^T]$ (ec. 6, `obtenerQ3d`). Apiladas: $Q\,m=0$ con $Q\in\mathbb R^{2n\times12}$. $M$ está definida a menos de escala (11 grados de libertad), así que con ruido se resuelve
+
+$$\min_{\|m\|=1}\|Qm\|^2=\min_{\|m\|=1}m^T(Q^TQ)\,m\quad\Rightarrow\quad m=\text{autovector de }Q^TQ\text{ de menor autovalor}$$
+
+(Ej. 1.b, `resolverDLT3D`). Después `devolverMatricesCalibracion3d` separa $M=K[R|t]$ (2c, más abajo) y el error de reproyección es la distancia entre $(u,v)$ y $(\hat u,\hat v)=\big(\tfrac{(MP)_1}{(MP)_3},\tfrac{(MP)_2}{(MP)_3}\big)$.
+
 ## 2a — `obtenerQ3d(imgPts, objPts)`
 
 **Qué hace.** Por cada punto P = (U, V, W, 1) agrega dos filas a Q: `[Pᵀ 0 −u·Pᵀ]` y `[0 Pᵀ −v·Pᵀ]`. Es la ecuación 6 del enunciado.

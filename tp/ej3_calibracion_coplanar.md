@@ -13,6 +13,42 @@ Con un tablero plano (W = 0), en M = K[r₁ r₂ r₃ t] la columna r₃ siempre
 
 Una sola vista da H (8 grados de libertad), que no alcanza para K (5) + R (3) + t (3) = 11. Por eso se usan varias vistas del mismo tablero: cada Hⱼ tiene su propia pose pero la misma K.
 
+## Algoritmo de Zhang paso a paso (ecuaciones)
+
+**1. Homografía de cada vista (`obtenerQ2d`, `resolverH`).** Para $P=(U,V,1)^T$ y su pixel: $\lambda(u,v,1)^T=HP$, con $H$ de filas $h^{1T},h^{2T},h^{3T}$. Entonces $u=\frac{h^{1T}P}{h^{3T}P}$, $v=\frac{h^{2T}P}{h^{3T}P}$ y
+
+$$(h^{1T}-u\,h^{3T})P=0,\qquad(h^{2T}-v\,h^{3T})P=0 .$$
+
+Dos ecuaciones lineales en las 9 entradas de $H$ por punto: filas $[P^T,0,-uP^T]$ y $[0,P^T,-vP^T]$ → $Q\,h=0$, $Q\in\mathbb R^{2n\times9}$ (ec. 11), y $\min_{\|h\|=1}\|Qh\|^2$ = autovector de $Q^TQ$ de menor autovalor.
+
+*Normalización de Hartley (ec. 14).* Píxeles ($\sim10^3$) y mm ($\sim10^2$) dejan $Q^TQ$ mal condicionada. Para cada conjunto de puntos se toma el centroide $(c_x,c_y)$ y la distancia media $d$ al centroide, y se usa
+
+$$T=\begin{pmatrix}s&0&-s\,c_x\\0&s&-s\,c_y\\0&0&1\end{pmatrix},\quad s=\frac{\sqrt2}{d}$$
+
+(quedan centroide en el origen y distancia media $\sqrt2$). Se resuelve $\tilde H$ con los puntos normalizados y se deshace: $H=T_{img}^{-1}\,\tilde H\,T_{mundo}$, con $\|H\|_F=1$.
+
+**2. Restricciones sobre $K$ (`armarA`).** Con $W=0$, $H=\lambda K[r_1\ r_2\ t]$ (columnas $h_1,h_2,h_3$). Entonces $r_1\propto K^{-1}h_1$ y $r_2\propto K^{-1}h_2$ con la misma constante, y como $r_1^Tr_2=0$ y $\|r_1\|=\|r_2\|$:
+
+$$h_1^T B\,h_2=0,\qquad h_1^TB\,h_1-h_2^TB\,h_2=0,\qquad B=K^{-T}K^{-1}\ \text{(simétrica)}.$$
+
+Se escribe $B$ con 6 incógnitas, $b=(B_{11},B_{12},B_{22},B_{13},B_{23},B_{33})^T$, y $h_i^TBh_j=v_{ij}^Tb$ con
+
+$$v_{ij}=\big(h_{i1}h_{j1},\;h_{i1}h_{j2}+h_{i2}h_{j1},\;h_{i2}h_{j2},\;h_{i3}h_{j1}+h_{i1}h_{j3},\;h_{i3}h_{j2}+h_{i2}h_{j3},\;h_{i3}h_{j3}\big)^T .$$
+
+Cada vista aporta dos filas, $v_{12}^T$ y $(v_{11}-v_{22})^T$ (con cada $H$ normalizada a norma 1 para que pesen parecido), y se apilan en $A\in\mathbb R^{2N\times6}$ con $A\,b=0$. Hacen falta $N\ge3$ vistas ($N\ge2$ si se supone $\gamma=0$).
+
+**3. $b$ y $K$ (`calcularMatrizK2D`).**
+1. $b$ = autovector de $A^TA$ de menor autovalor ($\|b\|=1$); el signo se elige con $B_{11}>0$.
+2. $B=K^{-T}K^{-1}=LL^T$ es una factorización de Cholesky: $L=K^{-T}$ (triangular inferior), así que $K=(L^T)^{-1}$, normalizada con $K_{33}=1$ (porque $b$ está definido a menos de escala). ALC no trae Cholesky: se obtiene de $B=L_1DL_1^T$ (LDV) y $L=L_1D^{1/2}$; falla si algún $D_{jj}\le0$.
+
+**4. Pose de cada vista (`obtenerPose2D`).** Con $K$ conocida:
+
+$$\lambda=\frac1{\|K^{-1}h_1\|},\quad r_1=\lambda K^{-1}h_1,\quad r_2=\lambda K^{-1}h_2,\quad r_3=r_1\times r_2,\quad t=\lambda K^{-1}h_3 .$$
+
+El signo de $\lambda$ se elige con $t_3>0$ (tablero delante de la cámara). Por el ruido $[r_1\,r_2\,r_3]$ no es exactamente una rotación; se la proyecta a la rotación más cercana (factor polar, igual a $UV^T$ de su SVD) con la iteración de Newton $R\leftarrow\frac12(R+R^{-T})$, que converge en 2–3 pasos.
+
+**5. Reproyección.** $\hat x=K(RP+t)$, $(\hat u,\hat v)=(\hat x_1/\hat x_3,\hat x_2/\hat x_3)$; se compara con los píxeles detectados.
+
 ## Rango de Q y cantidad mínima de puntos
 
 - H tiene 9 entradas pero está definida a menos de escala: 8 grados de libertad. Para que el núcleo de Q tenga dimensión 1, **rango(Q) = 8**.

@@ -982,7 +982,7 @@ def svd_reducida(A, k="max", tol=1e-15):
 
 
 # ======================================================================
-# TP - Calibracion de la camara (Ej. 2 a 5)   (tp/calibracion.py)
+# TP - Calibracion de la camara (Ej. 2 a 6)   (tp/calibracion.py)
 # ======================================================================
 
 def obtenerQ3d(imgPts, objPts):
@@ -1519,6 +1519,145 @@ def circuloEnPlano(centro, radio, n=100):
     ys = np.hstack([y, y[::-1][1:]])
     return np.hstack([(centro[0] + radio * xs).reshape(-1, 1),
                       (centro[1] + radio * ys).reshape(-1, 1)])
+
+
+# ---------------------------------------------------------------------------
+# Ejercicio 6 - POSIT coplanar (aterrizaje suave)
+# ---------------------------------------------------------------------------
+
+def _cruz(a, b):
+    """Producto vectorial de dos vectores de 3 componentes."""
+    return np.array([a[1] * b[2] - a[2] * b[1],
+                     a[2] * b[0] - a[0] * b[2],
+                     a[0] * b[1] - a[1] * b[0]])
+
+
+def calculoLambdaMu(I0, J0):
+    """
+    Escalares (lambda, mu) de la ecuacion 16, tales que I = I0 + lambda n y J = J0 + mu n
+    cumplen I.J = 0 y ||I|| = ||J|| (n: normal unitaria al plano del objeto).
+    Con C = lambda + i mu:  C^2 = (||J0||^2 - ||I0||^2) - 2i (I0 . J0)  (ec. 17).
+    Si C^2 = a + i b, sus raices son +-C con
+        lambda = sqrt((|C^2| + a) / 2),  mu = sign(b) sqrt((|C^2| - a) / 2)
+    (el signo de mu sale de lambda mu = b / 2 = -I0 . J0).
+    Retorna la raiz de lambda >= 0; la otra solucion es (-lambda, -mu).
+    """
+    I0 = np.asarray(I0, dtype=float)
+    J0 = np.asarray(J0, dtype=float)
+    a = np.sum(J0 * J0) - np.sum(I0 * I0)
+    b = -2.0 * np.sum(I0 * J0)
+    r = np.sqrt(a * a + b * b)
+    lam = np.sqrt(max((r + a) / 2.0, 0.0))
+    mu = np.sqrt(max((r - a) / 2.0, 0.0))
+    if b < 0:
+        mu = -mu
+    return lam, mu
+
+
+def calcularSalidaPOSIT(Is, Js, fx, m0, M0):
+    """
+    Pose (i, j, k, Z0, R, t) a partir de una solucion (I, J) del paso POS.
+    Is, Js: vectores I y J (3,). fx: focal en pixeles. m0: imagen (x0, y0) de M0,
+    ya medida respecto del centro principal. M0: coordenadas de M0 en el sistema del
+    objeto (los a_i del paso POS son relativos a M0).
+    Z0 = f / ||I|| (se usa el promedio de ||I|| y ||J||), i = I/||I||, j = J/||J||,
+    k = i x j, R = [i; j; k] (filas) y T = (Z0/f)(x0, y0, f) es la posicion de M0 en la
+    camara. Como X = R (P - M0) + T = R P + t, resulta t = T - R M0.
+    """
+    Is = np.asarray(Is, dtype=float)
+    Js = np.asarray(Js, dtype=float)
+    nI = norma(Is, 2)
+    nJ = norma(Js, 2)
+    Z0 = fx / ((nI + nJ) / 2.0)
+    i = Is / nI
+    j = Js / nJ
+    k = _cruz(i, j)
+    R = np.array([i, j, k])
+    T = (Z0 / fx) * np.array([m0[0], m0[1], fx])
+    t = T - calcularAx(R, np.asarray(M0, dtype=float))
+    return i, j, k, Z0, R, t
+
+
+def evaluarPose(R, t, obj_vecs, img_vecs, K):
+    """
+    Calidad de una pose. Proyecta obj_vecs (n x 3) con (R, t) y K; un punto es valido
+    si queda delante de la camara (Z > 0). Retorna (cantidad de validos, RMS en pixeles
+    contra img_vecs (n x 2, pixeles), calculado sobre los validos; inf si no hay ninguno).
+    """
+    obj_vecs = np.asarray(obj_vecs, dtype=float)
+    img_vecs = np.asarray(img_vecs, dtype=float)
+    n = obj_vecs.shape[0]
+    validos = 0
+    suma = 0.0
+    for p in range(n):
+        X = calcularAx(R, obj_vecs[p]) + t
+        if X[2] <= 0:
+            continue
+        x = calcularAx(K, X)
+        du = x[0] / x[2] - img_vecs[p, 0]
+        dv = x[1] / x[2] - img_vecs[p, 1]
+        suma += du * du + dv * dv
+        validos += 1
+    if validos == 0:
+        return 0, np.inf
+    return validos, np.sqrt(suma / validos)
+
+
+def _pasoPOS(A, b):
+    """Solucion de minimos cuadrados de A x = b con la pseudoinversa (SVD): x = V S^-1 U^T b."""
+    U, S, V = svd_reducida(A)
+    c = calcularAx(traspuesta(U), b) / S
+    return calcularAx(V, c)
+
+
+def aplicarPOSIT(obj_vecs, img_vecs, K, MaxIt=50, atol=1e-6):
+    """
+    POSIT coplanar (seccion 4). obj_vecs: n x 3 puntos del objeto, el primero es el
+    de referencia M0 (n >= 4, coplanares). img_vecs: n x 2 sus pixeles (u, v).
+    K: intrinsecos (se usan fx, fy, cu, cv). Se itera hasta MaxIt veces o hasta que el
+    RMS cambie menos que atol entre dos iteraciones.
+    En cada iteracion:  eps_i fijos -> I0 = A+ b_u, J0 = A+ b_v -> n (nucleo de A) ->
+    dos soluciones (lambda, mu) y (-lambda, -mu) -> pose de cada una -> se descartan las
+    que dejan algun punto detras de la camara (Z <= 0) -> se queda la de menor RMS ->
+    eps_i = a_i . k / Z0.
+    Retorna R, t (X_camara = R P + t). Lanza ValueError si ninguna solucion es valida.
+    """
+    obj_vecs = np.asarray(obj_vecs, dtype=float)
+    img_vecs = np.asarray(img_vecs, dtype=float)
+    n = obj_vecs.shape[0]
+    fx, fy, cu, cv = K[0, 0], K[1, 1], K[0, 2], K[1, 2]
+    # coordenadas centradas; y se reescala para que la focal sea fx en los dos ejes
+    x = img_vecs[:, 0] - cu
+    y = (img_vecs[:, 1] - cv) * fx / fy
+    M0 = obj_vecs[0]
+    A = obj_vecs[1:] - M0
+    nu = _vectorNucleo(A)
+    eps = np.zeros(n - 1)
+    R, t, rms_ant = None, None, np.inf
+    for it in range(int(MaxIt)):
+        bu = x[1:] * (1 + eps) - x[0]
+        bv = y[1:] * (1 + eps) - y[0]
+        I0 = _pasoPOS(A, bu)
+        J0 = _pasoPOS(A, bv)
+        lam, mu = calculoLambdaMu(I0, J0)
+        mejor = None
+        for s in (1.0, -1.0):
+            Is = I0 + s * lam * nu
+            Js = J0 + s * mu * nu
+            i, j, k, Z0, Rc, tc = calcularSalidaPOSIT(Is, Js, fx, (x[0], y[0]), M0)
+            validos, rms = evaluarPose(Rc, tc, obj_vecs, img_vecs, K)
+            if validos < n:
+                continue
+            if mejor is None or rms < mejor[0]:
+                mejor = (rms, Rc, tc, k, Z0)
+        if mejor is None:
+            raise ValueError("aplicarPOSIT: ninguna solucion deja todos los puntos delante de la camara.")
+        rms, R, t, k, Z0 = mejor
+        eps = calcularAx(A, k) / Z0
+        if abs(rms_ant - rms) < atol:
+            break
+        rms_ant = rms
+    return R, t
 
 
 # ======================================================================
