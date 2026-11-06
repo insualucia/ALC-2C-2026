@@ -356,6 +356,106 @@ def calcularMatrizK2D(A):
     return K / K[2, 2]
 
 
+def calcularKRestringida(Hlst, centro):
+    """
+    Intrinsecos con restricciones (Ej. 5.a): gamma = 0, pixeles cuadrados
+    (alfa_u = alfa_v = f) y punto principal conocido (cu, cv). Queda una sola
+    incognita, f.
+
+    Con esa K, B = K^-T K^-1 = (1/f^2) [[1, 0, -cu], [0, 1, -cv], [-cu, -cv, cu^2+cv^2+f^2]],
+    y su vector b = (B11, B12, B22, B13, B23, B33) resulta  b = x p + e, con x = 1/f^2,
+    p = (1, 0, 1, -cu, -cv, cu^2+cv^2) y e = (0, 0, 0, 0, 0, 1).
+    El sistema A b = 0 (de armarA) se vuelve  x (A p) = -(A e): un cuadrado minimo
+    de una sola incognita,  x = -(Ap . Ae) / (Ap . Ap).
+
+    Hlst: lista de N homografias (una por vista); basta N >= 1.
+    centro: (cu, cv) en pixeles.
+    Retorna K (3 x 3) y el residuo relativo ||x A p + A e|| / ||A e|| (0 si las H
+    son compatibles con esa K; crece con el ruido).
+    Lanza ValueError si x <= 0 (no hay f real).
+    """
+    cu, cv = float(centro[0]), float(centro[1])
+    A = armarA(Hlst)
+    p = np.array([1.0, 0.0, 1.0, -cu, -cv, cu * cu + cv * cv])
+    e = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
+    Ap = calcularAx(A, p)
+    Ae = calcularAx(A, e)
+    x = -np.sum(Ap * Ae) / np.sum(Ap * Ap)
+    if x <= 0:
+        raise ValueError("calcularKRestringida: x = 1/f^2 <= 0, no hay f real.")
+    f = 1.0 / np.sqrt(x)
+    residuo = np.sqrt(np.sum((x * Ap + Ae) ** 2)) / np.sqrt(np.sum(Ae * Ae))
+    K = np.array([[f, 0.0, cu],
+                  [0.0, f, cv],
+                  [0.0, 0.0, 1.0]])
+    return K, residuo
+
+
+def reproyectarPose(K, R, t, ptsMundo):
+    """
+    Proyecta puntos del mundo a la imagen con la pose (R, t) y los intrinsecos K
+    (Ej. 5.b):  x = K (R P + t),  (u, v) = (x1 / x3, x2 / x3).
+    ptsMundo: n x 3 (X, Y, Z) en metros (o n x 2, con Z = 0). Retorna n x 2 en pixeles.
+    """
+    P = np.asarray(ptsMundo, dtype=float)
+    if P.shape[1] == 2:
+        P = np.hstack([P, np.zeros((P.shape[0], 1))])
+    n = P.shape[0]
+    uv = np.zeros((n, 2))
+    for i in range(n):
+        X = calcularAx(R, P[i]) + t
+        x = calcularAx(K, X)
+        uv[i, 0] = x[0] / x[2]
+        uv[i, 1] = x[1] / x[2]
+    return uv
+
+
+def pendienteRecta(t, y):
+    """
+    Pendiente de la recta de minimos cuadrados y = a + b t:  b = sum((t - tm)(y - ym)) / sum((t - tm)^2).
+    """
+    t = np.asarray(t, dtype=float)
+    y = np.asarray(y, dtype=float)
+    tm = np.mean(t)
+    return np.sum((t - tm) * (y - np.mean(y))) / np.sum((t - tm) ** 2)
+
+
+def velocidadMedia(t, P):
+    """
+    Velocidad media de un agente que se mueve en el piso (Ej. 5.c).
+    t: n instantes en segundos. P: n x 2 posiciones (X, Y) en metros.
+    Ajusta una recta por minimos cuadrados a X(t) y a Y(t): la pendiente es la velocidad
+    en cada eje. Retorna (v, (vx, vy)), con v = sqrt(vx^2 + vy^2) en m/s.
+    """
+    P = np.asarray(P, dtype=float)
+    vx = pendienteRecta(t, P[:, 0])
+    vy = pendienteRecta(t, P[:, 1])
+    return np.sqrt(vx * vx + vy * vy), (vx, vy)
+
+
+def velocidadesLocales(t, P, k=3):
+    """
+    Velocidad en cada instante a partir de las 2k + 1 posiciones vecinas (ventana de k
+    puntos a cada lado, mas chica en los bordes, minimo 3 puntos): pendiente de la recta
+    de minimos cuadrados de X(t) e Y(t) en la ventana. Mas estable que diferencias de a
+    pares, porque el error de medir un pixel (unos 3 px) pesa mucho sobre dt de 0,03 a 0,25 s.
+    Retorna v (n,) en m/s.
+    """
+    t = np.asarray(t, dtype=float)
+    P = np.asarray(P, dtype=float)
+    n = len(t)
+    v = np.zeros(n)
+    for i in range(n):
+        a = max(0, i - k)
+        b = min(n, i + k + 1)
+        if b - a < 3:
+            a, b = max(0, b - 3), min(n, a + 3)
+        vx = pendienteRecta(t[a:b], P[a:b, 0])
+        vy = pendienteRecta(t[a:b], P[a:b, 1])
+        v[i] = np.sqrt(vx * vx + vy * vy)
+    return v
+
+
 def obtenerPose2D(Hj, K):
     """
     Pose (R_j, t_j) de la vista j a partir de su homografia H_j y de K (ec. 12 y h).

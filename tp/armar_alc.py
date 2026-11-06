@@ -22,7 +22,7 @@ FUENTES = [
     ("alc/autovalores.py", "L06 - Autovalores"),
     ("alc/markov.py", "L07 - Markov y matrices ralas"),
     ("alc/svd.py", "L08 - SVD"),
-    ("tp/calibracion.py", "TP - Calibracion de la camara (Ej. 2 y 3)"),
+    ("tp/calibracion.py", "TP - Calibracion de la camara (Ej. 2 a 5)"),
     ("tp/esquinas.py", "TP - Deteccion de esquinas del tablero (Ej. 3)"),
 ]
 
