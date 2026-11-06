@@ -397,3 +397,43 @@ def obtenerPose2D(Hj, K):
         if cambio < 1e-15:
             break
     return R, t
+
+
+# ---------------------------------------------------------------------------
+# Ejercicio 4 - Homografia del plano de la cancha
+# ---------------------------------------------------------------------------
+
+def proyectarPuntos(H, pts):
+    """
+    Aplica la homografia H (3 x 3) a puntos 2D del plano: x = H (p, 1)^T y luego
+    se divide por la tercera componente (eso es lo que modela la perspectiva).
+    H: cancha -> imagen (la que devuelve resolverH). Con inversa(H) se pasa de
+    pixeles de la foto a coordenadas de la cancha (metros).
+    pts: array de n x 2 (o un solo punto de 2 componentes).
+    Retorna un array de n x 2.
+    """
+    pts = np.asarray(pts, dtype=float).reshape(-1, 2)
+    n = pts.shape[0]
+    P = np.hstack([pts, np.ones((n, 1))])
+    X = multiplicacionDeMatrices(P, traspuesta(H))
+    return X[:, 0:2] / X[:, 2:3]
+
+
+def circuloEnPlano(centro, radio, n=100):
+    """
+    Puntos de una circunferencia de centro (U, V) y radio dados, en el plano.
+    Sin usar seno ni coseno: se usa la parametrizacion racional
+        x = (1 - t^2) / (1 + t^2),  y = 2 t / (1 + t^2),  t en [-1, 1],
+    que recorre el semicirculo de la derecha (angulos de -90 a 90 grados con
+    paso casi uniforme); el de la izquierda es su reflejo en x.
+    centro: (U, V). radio: en las mismas unidades (metros). n: puntos por semicirculo.
+    Retorna un array de (2 n + 1) x 2 que arranca y termina en el mismo punto.
+    """
+    t = np.arange(n + 1) / n * 2 - 1
+    x = (1 - t * t) / (1 + t * t)
+    y = 2 * t / (1 + t * t)
+    # derecha de abajo hacia arriba, luego izquierda de arriba hacia abajo
+    xs = np.hstack([x, -x[::-1][1:]])
+    ys = np.hstack([y, y[::-1][1:]])
+    return np.hstack([(centro[0] + radio * xs).reshape(-1, 1),
+                      (centro[1] + radio * ys).reshape(-1, 1)])
