@@ -86,3 +86,10 @@ Test sintético: se fijan K = (800, 810, 512, 288), 10 poses aleatorias y los 77
 **Ej. 2:** `resolverDLT3D` tenía el mismo patrón y también pasó a usar `_vectorNucleo` (ver `ej2_calibracion_3d.md`).
 
 **Observación (no aplicado):** `A` tiene número de condición ~2.6e7 (por la diferente escala de las columnas); normalizando sus columnas baja a ~3e2. Hoy no hace falta, pero mejoraría la estabilidad.
+
+## Entregable `alc.py` y notebook
+
+- `tp/armar_alc.py` genera `template-alumnos-20261027/alc.py` juntando en un solo archivo los módulos del labo (`alc/`: basicos, maquina, transformaciones, normas, lu, qr, autovalores, markov, svd) y las funciones del TP (`calibracion.py`, `esquinas.py`). Hay que volver a correrlo (`python tp/armar_alc.py`) cada vez que cambie un original; `alc.py` no se edita a mano. Sin imports entre módulos; `traspuesta` de `lu.py` (solo cuadradas) se descarta a favor de la general de `basicos.py`.
+- Las celdas de código de los Ej. 2 y 3 del notebook importan desde `alc` (el `alc.py` de la misma carpeta) y ya no usan `sys.path`, `calibracion` ni `esquinas`. Se corrieron usando solo `alc.py`: mismos resultados (K real igual, reproyección máx 0.43 px).
+- Para cumplir la lista de funciones permitidas se reemplazó `np.linalg.norm` por `norma(., 2)` en `alc/autovalores.py`, y en `esquinas.py` `np.where` por un bucle sobre el máximo por filas y `np.maximum` por `W * (W > 0)`. Los resultados no cambian.
+- Pendiente de revisar (código del labo, no tocado): `np.random` (`metpot2k`, `markov`, `normas`), `np.finfo`, `np.copy`, `np.block`, `np.column_stack` y `np.argmax` están fuera de la lista literal del enunciado.

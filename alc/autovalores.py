@@ -11,10 +11,10 @@ from .normas import norma
 def transformacion_de_f(A, v):
 
     w = calcularAx(A, v)
-    norm = np.linalg.norm(w, 2)
+    norm = norma(w, 2)
     if norm == 0:
         return 0
-    return w / np.linalg.norm(w, 2)
+    return w / norm
 
 
 def metpot2k(A, tol=1e-15, K=1000):

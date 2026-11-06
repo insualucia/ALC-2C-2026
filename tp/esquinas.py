@@ -58,12 +58,18 @@ def candidatosEsquinas(R, cantidad=120, radio=12, umbral=0.15):
         m = np.max(R)
         if m < umbral * tope:
             break
-        v, u = np.where(R == m)
-        v = v[0]
-        u = u[0]
+        # posicion del maximo: primero la fila (maximo por filas), luego la columna
+        maxFilas = np.max(R, axis=1)
+        v = 0
+        while maxFilas[v] != m:
+            v += 1
+        u = 0
+        while R[v, u] != m:
+            u += 1
         v0 = max(v - 3, 0); v1 = min(v + 4, R.shape[0])
         u0 = max(u - 3, 0); u1 = min(u + 4, R.shape[1])
-        W = np.maximum(R[v0:v1, u0:u1], 0)
+        W = R[v0:v1, u0:u1]
+        W = W * (W > 0)
         gu = np.arange(u0, u1) + 0.0
         gv = np.arange(v0, v1) + 0.0
         sw = np.sum(W)
