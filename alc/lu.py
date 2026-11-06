@@ -3,10 +3,20 @@ import numpy as np
 
 
 def calculaLU(A):
+    """
+    Descomposicion LU sin pivoteo (llama a elim_gaussiana).
+    Parametros: A: matriz cuadrada (array 2D).
+    Retorna: L, U (triangular inferior con unos en la diagonal y triangular superior) y la cantidad de operaciones.
+    """
     return elim_gaussiana(A)
 
 
 def res_tri(L, b, inferior):
+    """
+    Resuelve un sistema triangular L x = b por sustitucion hacia adelante o hacia atras.
+    Parametros: L: matriz triangular cuadrada. b: vector del lado derecho. inferior: True si L es triangular inferior, False si es superior.
+    Retorna: El vector solucion x.
+    """
     n = L.shape[1]
     x = np.zeros(n)
 
@@ -26,6 +36,11 @@ def res_tri(L, b, inferior):
     return x
 
 def inversa(A):
+    """
+    Inversa de una matriz cuadrada, resolviendo A x = e_i para cada columna con la descomposicion LU.
+    Parametros: A: matriz cuadrada inversible (array 2D).
+    Retorna: La matriz inversa de A.
+    """
     n = A.shape[0]
 
     L, U, cant_op = elim_gaussiana(A)
@@ -41,6 +56,11 @@ def inversa(A):
     return invA
 
 def traspuesta(A):
+    """
+    Traspuesta de una matriz cuadrada (la version general esta en basicos.py; en alc.py se usa esa).
+    Parametros: A: matriz cuadrada (array 2D).
+    Retorna: Una matriz nueva con B[j, i] = A[i, j].
+    """
     n = A.shape[1]
     B = A.copy()
     for i in range(n):
@@ -50,6 +70,11 @@ def traspuesta(A):
 
 
 def calculaLDV (A):
+    """
+    Factorizacion A = L D V, con L y V triangulares con unos en la diagonal y D diagonal, a partir de dos eliminaciones gaussianas (la segunda sobre U^T).
+    Parametros: A: matriz cuadrada con LU sin pivoteo (array 2D).
+    Retorna: L, D, V.
+    """
     L, U, cant_op = elim_gaussiana(A)
     U_traspuesta = traspuesta(U)
     V_traspuesta, D, cant_op1 = elim_gaussiana(U_traspuesta)
@@ -57,6 +82,11 @@ def calculaLDV (A):
     return L, D, V
 
 def elim_gaussiana(A):
+    """
+    Eliminacion gaussiana sin pivoteo: A = L U.
+    Parametros: A: matriz cuadrada (array 2D); no se modifica.
+    Retorna: L (triangular inferior con unos en la diagonal), U (triangular superior) y la cantidad de operaciones realizadas. Si A no es cuadrada imprime un aviso y devuelve None.
+    """
     cant_op = 0
     m=A.shape[0]
     n=A.shape[1]
@@ -94,6 +124,11 @@ def elim_gaussiana(A):
     return L, U, cant_op
 
 def esSDP(A, atol=1e-10):
+    """
+    Indica si una matriz es simetrica definida positiva: es simetrica (con tolerancia) y todos los pivotes D[i, i] de su LDV son > atol.
+    Parametros: A: matriz cuadrada (array 2D). atol: tolerancia.
+    Retorna: True si es simetrica definida positiva, False si no.
+    """
     n = A.shape[1]
     for i in range(n):
         for j in range(n):

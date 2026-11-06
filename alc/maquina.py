@@ -19,6 +19,11 @@ def error_relativo(x, y):
 
 
 def matricesIguales(A, B):
+  """
+  Compara dos matrices entrada por entrada con tolerancia de maquina (epsilon de float32).
+  Parametros: A, B: matrices (arrays 2D).
+  Retorna: True si tienen la misma forma y difieren en menos del epsilon en cada entrada; False si no.
+  """
   if A.shape != B.shape:
     return False
   else:

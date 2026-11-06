@@ -53,7 +53,11 @@ def _productoTriple(r1, r2, r3):
 
 
 def _norma(v):
-    """Norma euclidea de un vector."""
+    """
+    Norma euclidea de un vector: raiz de la suma de los cuadrados.
+    Parametros: v: vector (array 1D).
+    Retorna: La norma ||v||_2.
+    """
     return np.sqrt(np.sum(v * v))
 
 
@@ -617,7 +621,7 @@ def evaluarPose(R, t, obj_vecs, img_vecs, K):
         suma += du * du + dv * dv
         validos += 1
     if validos == 0:
-        return 0, np.inf
+        return 0, float("inf")
     return validos, np.sqrt(suma / validos)
 
 
@@ -651,7 +655,7 @@ def aplicarPOSIT(obj_vecs, img_vecs, K, MaxIt=50, atol=1e-6):
     A = obj_vecs[1:] - M0
     nu = _vectorNucleo(A)
     eps = np.zeros(n - 1)
-    R, t, rms_ant = None, None, np.inf
+    R, t, rms_ant = None, None, float("inf")
     for it in range(int(MaxIt)):
         bu = x[1:] * (1 + eps) - x[0]
         bv = y[1:] * (1 + eps) - y[0]

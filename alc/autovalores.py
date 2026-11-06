@@ -9,6 +9,11 @@ from .normas import norma
 
 
 def transformacion_de_f(A, v):
+    """
+    Un paso del metodo de la potencia: w = A v normalizado.
+    Parametros: A: matriz cuadrada. v: vector.
+    Retorna: El vector A v / ||A v||, o 0 si A v es el vector nulo.
+    """
 
     w = calcularAx(A, v)
     norm = norma(w, 2)

@@ -42,8 +42,9 @@ Marcar a mano 46 frames × 3 agentes no es práctico, así que se medió con un 
 (`tp/extraer_trayectorias.py`). Es una **herramienta de medición**, equivalente a marcar
 píxeles a mano como hicimos en el Ej. 4. Usa `scipy.ndimage` y `np.median`, que no están
 permitidos en el entregable; por eso no es parte de `alc.py`. El script deja los píxeles
-en `salguero/trayectorias_pix.csv` (columnas `agente, frame, u, v`) y el notebook solo
-lee ese archivo.
+en `salguero/trayectorias_pix.csv` (columnas `agente, frame, u, v`). Como solo se entregan
+`alc.py` y el notebook, esos píxeles medidos están escritos dentro del notebook (arreglo `tray`
+de la celda del 5.c) y el notebook no lee ningún archivo propio.
 
 - **Peatona de buzo rojo.** Tiene zapatos rojos, que dan un punto de apoyo muy claro.
   Se arma una máscara de color (`R > 140`, `R−G > 70`, `R−B > 60`), se queda con la zona
