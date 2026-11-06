@@ -29,16 +29,15 @@ def obtenerQ3d(imgPts, objPts):
 def resolverDLT3D(Q):
     """
     Resuelve  min ||Qm||^2  sujeto a ||m|| = 1  (ecuacion 8).
-    La solucion es el vector singular derecho de Q asociado al menor valor
-    singular (el autovector de Q^T Q de menor autovalor).
+    La solucion es el autovector de Q^T Q de menor autovalor (el vector singular
+    derecho de Q asociado al menor valor singular).
     Q: matriz de 2n x 12.
     Retorna M, la matriz de proyeccion de 3 x 4 (m reordenado por filas).
     """
     Q = np.asarray(Q, dtype=float)
-    # k = 12: hay que conservar tambien el menor valor singular, que es el
-    # que buscamos (con k="max" se lo descartaria por ser casi nulo)
-    _, S, V = svd_reducida(Q, k=Q.shape[1])
-    m = V[:, -1]
+    # autovector de menor autovalor de Q^T Q (ver _vectorNucleo): no se usa
+    # svd_reducida porque descarta los valores singulares casi nulos
+    m = _vectorNucleo(Q)
     M = np.zeros((3, 4))
     for j in range(3):
         M[j, :] = m[4 * j:4 * j + 4]
@@ -210,3 +209,191 @@ def verificarCalibracion3d(M, R, t, K, imgPts, objPts, tol=1e-8):
             "error_reproyeccion": error_reproyeccion,
             "delante_camara": delante_camara}
 
+
+
+def _vectorNucleo(M):
+    """
+    Vector unitario x que minimiza ||M x|| (a menos de signo): el autovector de
+    M^T M de menor autovalor, calculado con diagRH del modulo ALC.
+    Se usa en lugar de svd_reducida porque esta descarta los valores singulares
+    (casi) nulos, y con datos exactos el menor valor singular es justo ~0: la
+    ultima columna de V ya no seria el vector del nucleo.
+    M: matriz de m x n. Retorna un vector de n componentes.
+    """
+    M = np.asarray(M, dtype=float)
+    S, D = diagRH(multiplicacionDeMatrices(traspuesta(M), M))
+    n = M.shape[1]
+    imin = 0
+    for j in range(n):
+        if D[j, j] < D[imin, imin]:
+            imin = j
+    return np.array(S)[:, imin]
+
+
+def _normalizacionIsotropica(pts):
+    """
+    Normalizacion de Hartley (seccion 2.3): matriz T (3 x 3) tal que los puntos
+    T [x y 1]^T tienen centroide en el origen y distancia media al origen sqrt(2).
+    pts: array de n x 2. Retorna T.
+    """
+    pts = np.asarray(pts, dtype=float)
+    n = pts.shape[0]
+    cx = np.sum(pts[:, 0]) / n
+    cy = np.sum(pts[:, 1]) / n
+    distMedia = np.sum(np.sqrt((pts[:, 0] - cx) ** 2 + (pts[:, 1] - cy) ** 2)) / n
+    s = np.sqrt(2) / distMedia
+    return np.array([[s, 0.0, -s * cx],
+                     [0.0, s, -s * cy],
+                     [0.0, 0.0, 1.0]])
+
+
+def _aplicarT(T, pts):
+    """Aplica la transformacion homogenea T (3 x 3) a puntos 2D (n x 2)."""
+    pts = np.asarray(pts, dtype=float)
+    n = pts.shape[0]
+    P = np.hstack([pts, np.ones((n, 1))])
+    Y = multiplicacionDeMatrices(P, traspuesta(T))
+    return Y[:, 0:2] / Y[:, 2:3]
+
+
+def resolverH(imgPts, objPts, normalizar=True):
+    """
+    Estima la homografia H (3 x 3) del plano del tablero a la imagen, con
+    lambda (u, v, 1)^T = H (U, V, 1)^T, resolviendo  min ||Qh||^2 s.a. ||h|| = 1.
+    imgPts: n x 2 (u, v) en pixeles. objPts: n x 2 (U, V) en el plano (o n x 3 con W = 0).
+    normalizar: si es True usa la normalizacion isotropica de Hartley (ec. 14):
+        se resuelve para los puntos normalizados y luego H = T_img^-1 H_norm T_world.
+    Retorna H (3 x 3) con norma de Frobenius 1.
+    """
+    imgPts = np.asarray(imgPts, dtype=float)
+    objPts = np.asarray(objPts, dtype=float)[:, 0:2]
+    if normalizar:
+        Timg = _normalizacionIsotropica(imgPts)
+        Tworld = _normalizacionIsotropica(objPts)
+        imgN = _aplicarT(Timg, imgPts)
+        objN = _aplicarT(Tworld, objPts)
+    else:
+        imgN = imgPts
+        objN = objPts
+    Q = obtenerQ2d(imgN, objN)
+    h = _vectorNucleo(Q)
+    H = np.zeros((3, 3))
+    for j in range(3):
+        H[j, :] = h[3 * j:3 * j + 3]
+    if normalizar:
+        H = multiplicacionDeMatrices(multiplicacionDeMatrices(inversa(Timg), H), Tworld)
+    return H / np.sqrt(np.sum(H * H))
+
+
+def _vij(H, i, j):
+    """
+    Vector v_ij (6,) con  c_i^T B c_j = v_ij^T b,  donde c_i es la columna i de H
+    y b = (B11, B12, B22, B13, B23, B33). (Zhang, seccion 3.)
+    """
+    hi = H[:, i]
+    hj = H[:, j]
+    return np.array([hi[0] * hj[0],
+                     hi[0] * hj[1] + hi[1] * hj[0],
+                     hi[1] * hj[1],
+                     hi[2] * hj[0] + hi[0] * hj[2],
+                     hi[2] * hj[1] + hi[1] * hj[2],
+                     hi[2] * hj[2]])
+
+
+def armarA(Hlst):
+    """
+    Arma la matriz A (2N x 6) del sistema A b = 0 (ecuacion 13), con N homografias.
+    Hlst: lista de N matrices H_j de 3 x 3 (una por vista).
+    Cada vista aporta dos filas:  v12^T b = 0  y  (v11 - v22)^T b = 0,
+    que salen de r1^T r2 = 0 y ||r1|| = ||r2||. Se normaliza cada H a norma 1
+    para que todas las vistas pesen parecido.
+    """
+    N = len(Hlst)
+    A = np.zeros((2 * N, 6))
+    for k in range(N):
+        H = np.asarray(Hlst[k], dtype=float)
+        H = H / np.sqrt(np.sum(H * H))
+        A[2 * k, :] = _vij(H, 0, 1)
+        A[2 * k + 1, :] = _vij(H, 0, 0) - _vij(H, 1, 1)
+    return A
+
+
+def _cholesky(B):
+    """
+    Factorizacion de Cholesky B = L L^T (L triangular inferior) de una matriz
+    simetrica definida positiva, a partir de la factorizacion LDV del modulo ALC:
+    para B simetrica B = L1 D L1^T, y si D > 0, L = L1 D^(1/2).
+    Lanza ValueError si algun elemento de D es <= 0 (B no es definida positiva).
+    """
+    n = B.shape[0]
+    L1, D, V = calculaLDV(B)
+    L = np.zeros((n, n))
+    for j in range(n):
+        if D[j, j] <= 0:
+            raise ValueError("_cholesky: la matriz no es definida positiva.")
+        L[:, j] = L1[:, j] * np.sqrt(D[j, j])
+    return L
+
+
+def calcularMatrizK2D(A):
+    """
+    Calcula la matriz de intrinsecos K (3 x 3) a partir de A (2N x 6).
+    1) b = vector singular derecho de menor valor singular de A (A b = 0, ||b|| = 1).
+    2) b es definido salvo signo: se elige el que deja a B = K^-T K^-1 definida
+       positiva (B11 > 0 y Cholesky exitoso).
+    3) B = L L^T (Cholesky) => L = K^-T => K = (L^T)^-1, normalizada con K33 = 1.
+    Se necesitan N >= 3 vistas (N >= 2 si se supone gamma = 0), con poses no degeneradas.
+    """
+    A = np.asarray(A, dtype=float)
+    b = _vectorNucleo(A)
+    if b[0] < 0:
+        b = -b
+    B = np.array([[b[0], b[1], b[3]],
+                  [b[1], b[2], b[4]],
+                  [b[3], b[4], b[5]]])
+    L = _cholesky(B)
+    K = inversa(traspuesta(L))
+    return K / K[2, 2]
+
+
+def obtenerPose2D(Hj, K):
+    """
+    Pose (R_j, t_j) de la vista j a partir de su homografia H_j y de K (ec. 12 y h).
+    H_j ~ K [r1 r2 t]  =>  r1 = lam K^-1 c1,  r2 = lam K^-1 c2,  r3 = r1 x r2,
+    t = lam K^-1 c3,  con lam = 1 / ||K^-1 c1||.
+    El signo de lam se elige para que t3 > 0 (el tablero queda delante de la camara).
+    Como el ruido hace que [r1 r2 r3] no sea exactamente una rotacion, se la
+    proyecta a la rotacion ortogonal mas cercana (R = U V^T de su SVD), calculada
+    con iteracion de Newton.
+    Retorna R (3 x 3) y t (3,) en las unidades del tablero (mm).
+    """
+    Hj = np.asarray(Hj, dtype=float)
+    Kinv = inversa(K)
+    c1 = Hj[:, 0]
+    c2 = Hj[:, 1]
+    c3 = Hj[:, 2]
+    k1 = calcularAx(Kinv, c1)
+    k2 = calcularAx(Kinv, c2)
+    k3 = calcularAx(Kinv, c3)
+    lam = 1.0 / norma(k1, 2)
+    if lam * k3[2] < 0:
+        lam = -lam
+    r1 = lam * k1
+    r2 = lam * k2
+    r3 = np.array([r1[1] * r2[2] - r1[2] * r2[1],
+                   r1[2] * r2[0] - r1[0] * r2[2],
+                   r1[0] * r2[1] - r1[1] * r2[0]])
+    t = lam * k3
+    R = np.array([r1, r2, r3]).T          # r1, r2, r3 como columnas
+    # Proyeccion a la rotacion mas cercana (el factor U V^T de la SVD de R) por
+    # iteracion de Newton R <- (R + R^-T) / 2: converge en 2-3 pasos a la misma
+    # matriz y queda ortonormal a precision de maquina. (Con svd_reducida de ALC
+    # quedaba ortonormal solo hasta ~3e-4: R ya es casi rotacion, asi que R^T R ~ I
+    # tiene los 3 autovalores casi iguales y sus autovectores salen mal separados.)
+    for _ in range(50):
+        Rnueva = (R + traspuesta(inversa(R))) / 2
+        cambio = np.max(np.abs(Rnueva - R))
+        R = Rnueva
+        if cambio < 1e-15:
+            break
+    return R, t

@@ -26,16 +26,8 @@ Con n = 12 puntos, Q es de 24 × 12. Es más que el mínimo de 6 puntos que se d
 **Justificación.** mᵀQᵀQm sobre la esfera unitaria se minimiza en el autovector de QᵀQ de menor autovalor (cociente de Rayleigh). Ese vector es el vector singular derecho de Q asociado a σ_min, o sea la última columna de V. El mínimo vale σ_min².
 
 **Decisiones.**
-- Se usa `svd_reducida` del módulo ALC, como se pidió, y se toma la última columna de V. Se reordena por filas (`M[j, :] = m[4j:4j+4]`) para ser consistente con 2a.
-- Se llama con `k = Q.shape[1]` (12) y no con `k = "max"`. Con los datos reales, σ_min/σ_max ≈ 1.7·10⁻⁷, es decir λ_min/λ_max ≈ 3·10⁻¹⁴. El filtro original de `svd_reducida` (`lam > 1e-12·lam[0]`) lo trataba como ruido y descartaba justo el vector buscado.
-
-**Cambio en `alc/svd.py`.** Para que lo anterior funcione se modificó `svd_reducida`:
-- Con `k = "max"` el comportamiento es el de antes (con el filtro).
-- Con un `k` explícito se retienen los k valores singulares pedidos y solo se descartan los que valen exactamente 0, para no dividir por cero al calcular u = Av/σ.
-
-Se eligió modificar la función y no armar un camino alternativo dentro de `resolverDLT3D` para no duplicar lógica de SVD.
-
-**Validación.** Para la fila 0, `‖Qm‖ = 0.008223`, igual al σ_min obtenido con `np.linalg.svd` (usado solo como verificación fuera del código entregable). Error máximo de reproyección con M: 0.57 px (fila 0), 0.80 px (fila 50), 1.36 px (fila 100).
+- Se usa el autovector de menor autovalor de QᵀQ (helper `_vectorNucleo`, con `diagRH` del módulo ALC), que es el vector singular derecho de σ_min. Antes se usaba `svd_reducida` y la última columna de V, pero esa función descarta los valores singulares casi nulos, así que con datos exactos devolvía otro vector (ver el Ej. 3). Con datos reales los resultados no cambian. Se reordena por filas (`M[j, :] = m[4j:4j+4]`) para ser consistente con 2a.
+- Historia: antes se llamaba `svd_reducida(Q, k=12)`. Con los datos reales, σ_min/σ_max ≈ 1.7·10⁻⁷ (λ_min/λ_max ≈ 3·10⁻¹⁴), y el filtro original de `svd_reducida` (`lam > 1e-12·lam[0]`) lo trataba como ruido y descartaba justo el vector buscado. Por eso se había modificado `svd_reducida` en `alc/svd.py`: con un `k` explícito retiene los k valores singulares pedidos y solo descarta los que valen exactamente 0 (con `k = "max"` queda como antes). Esa modificación se mantiene, pero `resolverDLT3D` ya no depende de ella: `_vectorNucleo` no filtra nada, y además cubre el caso de datos exactos (σ_min ≈ 0), que `svd_reducida` con `k` explícito sigue descartando.
 
 ## 2c — `devolverMatricesCalibracion3d(M)`
  
@@ -106,3 +98,17 @@ Para la fila 100: K ≈ [[418.8, −0.52, 357.8], [0, 416.5, 255.8], [0, 0, 1]].
 - **2d:** las restricciones se imponen después de la descomposición libre (ver 2d). Estimar M con las restricciones incluidas sería más exacto, pero es un problema no lineal.
 - **Entrega:** la consigna pide un único `alc.py`. Estas funciones hay que incorporarlas ahí al armar la entrega.
  
+## Notebook (`grupo_XX_TP.ipynb`, celda del Ejercicio 2)
+
+La celda carga `p_W_corners.txt` (con `delimiter=","`) y `detected_corners.txt`, y para las detecciones 0, 50 y 100 hace `obtenerQ3d` → `resolverDLT3D` → `devolverMatricesCalibracion3d` en las cuatro variantes (libre, αu = αv, γ = 0, ambas). Imprime K, R, t y el error máximo de reproyección con `verificarCalibracion3d`; para la variante libre también ‖R·Rᵀ − I‖, det(R) y si los puntos quedan delante de la cámara. Reproduce la tabla de 2d (0.57 / 0.96 / 0.57 / 0.96 px en la detección 0).
+- La carpeta del template se llama `" calib"` (con espacio); la celda la busca con `os.listdir`.
+- La celda no tiene las salidas guardadas: hay que ejecutarla.
+- Solo se muestran 3 de las 210 detecciones; no se promedian ni se usan todas.
+
+## Cambio en `resolverDLT3D`
+
+Ahora usa `_vectorNucleo(Q)` en lugar de `svd_reducida(Q, k=12)` y `V[:, -1]`. Resultados con datos reales sin cambios (error máx de reproyección 0.57 / 0.80 / 1.36 px en las detecciones 0, 50, 100). Con datos sintéticos exactos (K = 800/810/512/288) recupera K con error ~2.5e-7 y R con ~3e-10.
+
+## Test (`tp/test_ej2.py`)
+
+`python tp/test_ej2.py` (OK/FALLA, código de salida ≠ 0 si algo falla). Chequea: Q de 24 × 12, Q·m_verdadera = 0 (2e-16), rango(Q) = 11, datos sintéticos exactos (K, R, t recuperados con error ≤ 3e-7), invariancia al signo de M, restricciones γ = 0 y αu = αv impuestas, y las 210 detecciones reales (R ortonormal, det = 1, K triangular, K[R|t] = M, puntos delante de la cámara, error máximo de reproyección 1.36 px en la detección 100). Resultado: TODO OK.
